@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Sword, Sparkles, Zap, Shield, Heart, Coins, ArrowUpRight, Check } from 'lucide-react';
-import { PlayerStats, Language } from '../types/game';
+import { PlayerSkin, PlayerStats, Language } from '../types/game';
 import { getTranslation } from '../utils/translations';
 import { sounds } from '../audio/soundManager';
 
@@ -33,6 +33,25 @@ export const DojoModal: React.FC<DojoModalProps> = ({
   };
 
   const totalScrolls = Object.values(stats.levelStars).reduce((a, b) => a + b, 0);
+
+  // Persistent skin unlocks: once earned (coins OR scrolls threshold), a skin
+  // stays unlocked forever. Previously the check used the live coin balance,
+  // so spending coins re-locked already-owned skins.
+  const unlockedSkins: PlayerSkin[] =
+    stats.unlockedSkins && stats.unlockedSkins.length > 0 ? stats.unlockedSkins : ['arashi'];
+  // Promote any newly-qualified skin into the persistent unlock list.
+  // (Self-terminating: after the update, `missing` is empty so no loop.)
+  useEffect(() => {
+    const qualified: PlayerSkin[] = ['arashi'];
+    if (stats.coins >= 80 || totalScrolls >= 2) qualified.push('crimson');
+    if (stats.coins >= 180 || totalScrolls >= 4) qualified.push('ghost');
+    if (stats.coins >= 300 || totalScrolls >= 6) qualified.push('golden');
+    const missing = qualified.filter((s) => !unlockedSkins.includes(s));
+    if (missing.length > 0) {
+      onUpdateStats({ ...stats, unlockedSkins: [...unlockedSkins, ...missing] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats.coins, totalScrolls]);
 
   const upgradeSkill = (skill: keyof PlayerStats['upgrades']) => {
     const currentLvl = stats.upgrades[skill];
@@ -67,7 +86,11 @@ export const DojoModal: React.FC<DojoModalProps> = ({
     onUpdateStats(updated);
   };
 
-  const equipSkin = (skinId: PlayerStats['skin']) => {
+  const equipSkin = (skinId: PlayerSkin) => {
+    if (!unlockedSkins.includes(skinId)) {
+      sounds.playClash();
+      return;
+    }
     sounds.playCoin();
     onUpdateStats({ ...stats, skin: skinId });
   };
@@ -245,7 +268,7 @@ export const DojoModal: React.FC<DojoModalProps> = ({
                 colorClass="border-rose-500/50 bg-rose-950/20"
                 glowColor="#f43f5e"
                 isEquipped={stats.skin === 'crimson'}
-                isUnlocked={stats.coins >= 80 || totalScrolls >= 2}
+                isUnlocked={unlockedSkins.includes('crimson')}
                 unlockText={isRtl ? '۸۰ سکه یا ۲ طومار' : '80 Coins or 2 Scrolls'}
                 onEquip={() => equipSkin('crimson')}
                 trans={trans}
@@ -259,7 +282,7 @@ export const DojoModal: React.FC<DojoModalProps> = ({
                 colorClass="border-slate-400/50 bg-slate-900/30"
                 glowColor="#e2e8f0"
                 isEquipped={stats.skin === 'ghost'}
-                isUnlocked={stats.coins >= 180 || totalScrolls >= 4}
+                isUnlocked={unlockedSkins.includes('ghost')}
                 unlockText={isRtl ? '۱۸۰ سکه یا ۴ طومار' : '180 Coins or 4 Scrolls'}
                 onEquip={() => equipSkin('ghost')}
                 trans={trans}
@@ -273,7 +296,7 @@ export const DojoModal: React.FC<DojoModalProps> = ({
                 colorClass="border-amber-400/50 bg-amber-950/20"
                 glowColor="#fbbf24"
                 isEquipped={stats.skin === 'golden'}
-                isUnlocked={stats.coins >= 300 || totalScrolls >= 6}
+                isUnlocked={unlockedSkins.includes('golden')}
                 unlockText={isRtl ? '۳۰۰ سکه یا ۶ طومار' : '300 Coins or 6 Scrolls'}
                 onEquip={() => equipSkin('golden')}
                 trans={trans}

@@ -18,6 +18,8 @@ export interface EngineCallbacks {
   onLevelComplete: (stats: { time: number; scrolls: number; kills: number }) => void;
   onGameOver: () => void;
   onBossHpChange?: (hp: number, maxHp: number) => void;
+  /** Fired when the player activates a checkpoint so the shell can respawn there on death. */
+  onCheckpoint?: (spawn: { x: number; y: number }) => void;
 }
 
 export class NinjaEngine {
@@ -76,6 +78,11 @@ export class NinjaEngine {
   private bgImage: HTMLImageElement | null = null;
   private titleBgImage: HTMLImageElement | null = null;
 
+  /** Optional checkpoint spawn point (set by the shell when the player died). */
+  private spawnOverride: { x: number; y: number } | null = null;
+  /** Pre-bound rAF loop (avoids per-frame closure allocation). */
+  private boundLoop: (timestamp: number) => void = () => {};
+
   // HiDPI support: logical viewport size in CSS pixels + device pixel ratio
   private dpr: number = 1;
   private viewW: number = 1280;
@@ -86,7 +93,8 @@ export class NinjaEngine {
     level: LevelData,
     stats: PlayerStats,
     callbacks: EngineCallbacks,
-    bgImgUrl?: string
+    bgImgUrl?: string,
+    spawnOverride?: { x: number; y: number }
   ) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
@@ -94,6 +102,10 @@ export class NinjaEngine {
     this.level = JSON.parse(JSON.stringify(level)); // deep clone so restarts work fresh
     this.stats = stats;
     this.callbacks = callbacks;
+    this.spawnOverride = spawnOverride || null;
+    // Bind the loop ONCE — binding per frame inside requestAnimationFrame
+    // allocated a new closure every frame (GC churn on mobile).
+    this.boundLoop = this.loop.bind(this);
 
     if (bgImgUrl) {
       this.bgImage = new Image();
@@ -135,7 +147,7 @@ export class NinjaEngine {
   }
 
   public resetLevel(checkpointSpawn?: { x: number; y: number }) {
-    const spawn = checkpointSpawn || this.level.spawnPoint;
+    const spawn = checkpointSpawn || this.spawnOverride || this.level.spawnPoint;
     this.player.x = spawn.x;
     this.player.y = spawn.y;
     this.player.vx = 0;
@@ -194,13 +206,21 @@ export class NinjaEngine {
   }
 
   public start() {
+    // Guard against double-start: two concurrent rAF chains would run the
+    // simulation at 2x speed with duplicated entities.
+    if (this.isRunning) return;
     this.isRunning = true;
+    this.keys = {}; // drop any input held from a previous session/pause
     this.lastTime = performance.now();
-    requestAnimationFrame(this.loop.bind(this));
+    requestAnimationFrame(this.boundLoop);
   }
 
   public stop() {
     this.isRunning = false;
+    // Release held inputs (keyboard / virtual buttons) so the player doesn't
+    // keep auto-running after resume — the matching keyup may be swallowed
+    // while paused.
+    this.keys = {};
   }
 
   // Action methods
@@ -426,7 +446,7 @@ export class NinjaEngine {
     this.update(dt);
     this.render();
 
-    requestAnimationFrame(this.loop.bind(this));
+    requestAnimationFrame(this.boundLoop);
   }
 
   private update(dt: number) {
@@ -763,10 +783,33 @@ export class NinjaEngine {
           }
         }
 
-        // Apply enemy physics
-        enemy.x += enemy.vx * 60 * dt;
+        // Apply enemy physics with a LEDGE GUARD: enemies have no gravity, so
+        // without this check a chasing enemy would happily walk off a platform
+        // and float across spike chasms.
+        const nextEnemyX = enemy.x + enemy.vx * 60 * dt;
+        const probeX = enemy.vx > 0 ? nextEnemyX + enemy.w : nextEnemyX;
+        if (this.hasGroundBelow(probeX, enemy.y + enemy.h)) {
+          enemy.x = nextEnemyX;
+        } else {
+          enemy.vx = 0;
+          if (!playerDetected) {
+            // Patrol reached a ledge before its bounds — turn around.
+            enemy.direction = (enemy.direction * -1) as 1 | -1;
+          }
+        }
       }
     }
+  }
+
+  /** True when there is walkable solid ground within a step below (footY). */
+  private hasGroundBelow(cx: number, footY: number): boolean {
+    for (const plat of this.level.platforms) {
+      if (plat.type !== 'solid') continue;
+      if (cx >= plat.x && cx <= plat.x + plat.w && plat.y >= footY - 8 && plat.y <= footY + 48) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private updateBossAkumu(boss: Enemy, dt: number, distToPlayer: number) {
@@ -931,6 +974,8 @@ export class NinjaEngine {
         chk.activated = true;
         sounds.playCheckpoint();
         this.createPuff(chk.x, chk.y, 18, '#38bdf8');
+        // Report to the shell so death/respawn can start from here.
+        this.callbacks.onCheckpoint?.({ x: chk.x, y: chk.y - 30 });
       }
     }
   }

@@ -183,7 +183,10 @@ export const LEVELS: LevelData[] = [
 
       // 3 Ancient Scrolls (Essential for 3 stars)
       { id: 'sc1', type: 'scroll', x: 510, y: 430, collected: false },
-      { id: 'sc2', type: 'scroll', x: 1850, y: 500, collected: false }, // Inside secret alcove
+      // Inside the secret alcove (below the ceiling slab at y=550, behind the
+      // breakable wall at x=1700) — was floating above the ceiling where the
+      // secret wall guarded an empty room.
+      { id: 'sc2', type: 'scroll', x: 1850, y: 690, collected: false },
       { id: 'sc3', type: 'scroll', x: 2350, y: 430, collected: false },
 
       // Diamond & Health
@@ -472,8 +475,10 @@ export const LEVELS: LevelData[] = [
       { x: 1880, y: 580, w: 180, h: 22, type: 'bamboo' },
       { x: 2200, y: 460, w: 240, h: 24, type: 'solid' },
       { x: 2580, y: 580, w: 180, h: 22, type: 'bamboo' },
-      // Boundary walls for boss arena
-      { x: 1690, y: 300, w: 30, h: 440, type: 'solid' },
+      // Boundary wall for boss arena — MUST NOT reach the ground (y+h = 740),
+      // otherwise the ground gate into the arena is sealed and the level is
+      // unfinishable. h=260 leaves a 180px walk-in passage above the floor.
+      { x: 1690, y: 300, w: 30, h: 260, type: 'solid' },
     ],
     traps: [
       { id: 'sp3_1', type: 'spikes', x: 500, y: 770, w: 120, h: 40 },

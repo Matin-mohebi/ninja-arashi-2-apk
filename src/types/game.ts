@@ -9,6 +9,8 @@ export type GameState =
 
 export type Language = 'fa' | 'en';
 
+export type PlayerSkin = 'arashi' | 'crimson' | 'ghost' | 'golden';
+
 export interface PlayerStats {
   maxHp: number;
   hp: number;
@@ -21,6 +23,8 @@ export interface PlayerStats {
   coins: number;
   diamonds: number;
   skin: 'arashi' | 'crimson' | 'ghost' | 'golden';
+  /** Skins permanently unlocked (previously re-locked whenever coins dropped). */
+  unlockedSkins: PlayerSkin[];
   levelsCompleted: number[];
   levelStars: Record<number, number>; // level index -> stars (1-3)
   upgrades: {

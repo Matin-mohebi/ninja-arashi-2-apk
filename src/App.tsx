@@ -50,6 +50,7 @@ const INITIAL_STATS: PlayerStats = {
   coins: 50,
   diamonds: 1,
   skin: 'arashi',
+  unlockedSkins: ['arashi'],
   levelsCompleted: [],
   levelStars: {},
   upgrades: {
@@ -105,9 +106,17 @@ export default function App() {
   // Double-back-to-exit toast on Android
   const [showExitToast, setShowExitToast] = useState<boolean>(false);
 
+  // Refs mirroring state for listeners that must not re-subscribe
+  const gameStateRef = useRef<GameState>(gameState);
+  gameStateRef.current = gameState;
+  const mutedRef = useRef<boolean>(isMuted);
+  mutedRef.current = isMuted;
+
   // Canvas & Engine refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<NinjaEngine | null>(null);
+  // Last activated checkpoint per level — used to respawn after death.
+  const checkpointsRef = useRef<Record<number, { x: number; y: number }>>({});
 
   // Save stats to localStorage
   useEffect(() => {
@@ -147,6 +156,10 @@ export default function App() {
 
       const initialCoins = stats.coins;
 
+      // Respawn at the activated checkpoint (if any) — keeps the checkpoint
+      // system meaningful instead of restarting the whole level on death.
+      const savedCheckpoint = checkpointsRef.current[level.id] || null;
+
       const engine = new NinjaEngine(
         canvas,
         level,
@@ -175,6 +188,9 @@ export default function App() {
           onBossHpChange: (hp, max) => {
             setBossHp({ current: hp, max });
           },
+          onCheckpoint: (spawn) => {
+            checkpointsRef.current[level.id] = spawn;
+          },
           onLevelComplete: (runSummary) => {
             setVictoryStats(runSummary);
             setCoinsEarnedInRun(Math.max(0, engine.player ? stats.coins - initialCoins : 0));
@@ -199,7 +215,8 @@ export default function App() {
             setGameState('GAME_OVER');
           },
         },
-        forestBg
+        forestBg,
+        savedCheckpoint
       );
 
       engineRef.current = engine;
@@ -211,11 +228,11 @@ export default function App() {
   // Resize / orientation listener (HiDPI aware, handled by engine)
   // Robustness notes:
   // - `orientationchange` fires BEFORE the viewport/layout settles on some
-  //   browsers (esp. iOS Safari) — so we re-apply once more after a delay.
+  //   browsers (esp. iOS Safari) — so we re-apply several times over ~1s.
   // - The matchMedia "change" event is the source of truth for actual flips.
   // - visualViewport resize covers URL-bar show/hide and iOS quirks.
   useEffect(() => {
-    let delayed: ReturnType<typeof setTimeout> | undefined;
+    const delayed: ReturnType<typeof setTimeout>[] = [];
     const apply = () => {
       engineRef.current?.handleResize();
       setShowRotateHint(shouldShowRotateHint());
@@ -223,8 +240,13 @@ export default function App() {
     const handleResize = () => apply();
     const handleOrientation = () => {
       apply();
-      clearTimeout(delayed);
-      delayed = setTimeout(apply, 350);
+      delayed.forEach(clearTimeout);
+      delayed.length = 0;
+      // Staggered re-applies: layout settles at different speeds per browser
+      // (Android Chrome can finish after 300ms, iOS Safari after ~600ms).
+      delayed.push(setTimeout(apply, 120));
+      delayed.push(setTimeout(apply, 400));
+      delayed.push(setTimeout(apply, 900));
     };
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleOrientation);
@@ -236,7 +258,7 @@ export default function App() {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleOrientation);
       vv?.removeEventListener('resize', handleVv);
-      clearTimeout(delayed);
+      delayed.forEach(clearTimeout);
       cleanupWatch();
     };
   }, []);
@@ -251,15 +273,65 @@ export default function App() {
     };
   }, []);
 
+  // Auto-pause when the tab/app goes to the background (mobile browsers keep
+  // the JS interval-based ambient music alive and returning mid-jump causes
+  // unfair deaths). Music is stopped too and resumed on return.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (gameStateRef.current === 'PLAYING') {
+          setGameState('PAUSED');
+          engineRef.current?.stop();
+        }
+        sounds.stopAmbientMusic();
+      } else {
+        sounds.setMuted(mutedRef.current); // restarts ambient music if unmuted
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  // Ambient music unlock: Web Audio requires a user gesture to start (iOS
+  // Safari especially). Previously the ambient music NEVER started because
+  // nothing called setMuted/startAmbientMusic on load.
+  useEffect(() => {
+    const kick = () => sounds.setMuted(mutedRef.current);
+    window.addEventListener('pointerdown', kick, { once: true });
+    window.addEventListener('keydown', kick, { once: true });
+    window.addEventListener('touchstart', kick, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', kick);
+      window.removeEventListener('keydown', kick);
+      window.removeEventListener('touchstart', kick);
+    };
+  }, []);
+
   useEffect(() => {
     let lastBack = 0;
     let toastTimer: ReturnType<typeof setTimeout>;
     const onAndroidBack = () => {
+      // 1. Close any open modal first (Dojo / How-to-play)
+      if (showDojo) {
+        setShowDojo(false);
+        return;
+      }
+      if (showHowToPlay) {
+        setShowHowToPlay(false);
+        return;
+      }
+      // 2. In-game: pause.  Paused: resume (symmetric with the Escape key).
       if (gameState === 'PLAYING') {
         setGameState('PAUSED');
         engineRef.current?.stop();
         return;
       }
+      if (gameState === 'PAUSED') {
+        setGameState('PLAYING');
+        engineRef.current?.start();
+        return;
+      }
+      // 3. Menus / summaries: double-back to exit
       const now = Date.now();
       if (now - lastBack < 2500) {
         exitApp();
@@ -275,7 +347,7 @@ export default function App() {
       window.removeEventListener('android-back', onAndroidBack);
       clearTimeout(toastTimer);
     };
-  }, [gameState]);
+  }, [gameState, showDojo, showHowToPlay]);
 
   // Keyboard controls listener
   useEffect(() => {
@@ -331,6 +403,9 @@ export default function App() {
 
   // Start Level
   const startLevel = (lvlId: number) => {
+    // Fresh entry into a level — clear any checkpoint from a previous attempt
+    // (restartLevel deliberately does NOT clear it so respawn works).
+    delete checkpointsRef.current[lvlId];
     setCurrentLevelId(lvlId);
     setGameState('PLAYING');
     setTimeout(() => {
@@ -370,7 +445,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden font-sans select-none">
+    <div className="relative app-shell bg-black overflow-hidden font-sans select-none">
       {/* 1. Title Screen */}
       {gameState === 'TITLE_MENU' && (
         <TitleScreen

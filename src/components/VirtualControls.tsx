@@ -33,6 +33,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
         <button
           onTouchStart={(e) => { e.preventDefault(); onMoveLeft(true); }}
           onTouchEnd={(e) => { e.preventDefault(); onMoveLeft(false); }}
+          onTouchCancel={() => onMoveLeft(false)}
           onMouseDown={() => onMoveLeft(true)}
           onMouseUp={() => onMoveLeft(false)}
           onMouseLeave={() => onMoveLeft(false)}
@@ -46,6 +47,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
         <button
           onTouchStart={(e) => { e.preventDefault(); onCrouch(true); }}
           onTouchEnd={(e) => { e.preventDefault(); onCrouch(false); }}
+          onTouchCancel={() => onCrouch(false)}
           onMouseDown={() => onCrouch(true)}
           onMouseUp={() => onCrouch(false)}
           onMouseLeave={() => onCrouch(false)}
@@ -59,6 +61,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
         <button
           onTouchStart={(e) => { e.preventDefault(); onMoveRight(true); }}
           onTouchEnd={(e) => { e.preventDefault(); onMoveRight(false); }}
+          onTouchCancel={() => onMoveRight(false)}
           onMouseDown={() => onMoveRight(true)}
           onMouseUp={() => onMoveRight(false)}
           onMouseLeave={() => onMoveRight(false)}
