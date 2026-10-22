@@ -14,7 +14,7 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 ![Engine](https://img.shields.io/badge/render-Canvas%202D%20%2B%20React%2019-red)
 ![Wrapper](https://img.shields.io/badge/wrapper-Capacitor%207-blue)
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-orange)
-![Size](https://img.shields.io/badge/APK-~32%20MB-yellow)
+![Size](https://img.shields.io/badge/APK-~37%20MB-yellow)
 
 </div>
 
@@ -24,7 +24,7 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 
 ## ⬇️ دانلود | Download
 
-**📱 [دانلود APK — Ninja-Arashi-2-v1.1.0.apk (~21 MB)](../../releases/download/v1.1.0/Ninja-Arashi-2-v1.1.0.apk)**
+**📱 [دانلود APK — NINJA-v1.2.0.apk (~37 MB)](../../releases/download/v1.2.0/NINJA-v1.2.0.apk)**
 
 **🌐 [بازی آنلاین در مرورگر (بدون نصب)](https://matin-mohebi.github.io/ninja-arashi-2-apk/)** | [Releases](../../releases)
 
