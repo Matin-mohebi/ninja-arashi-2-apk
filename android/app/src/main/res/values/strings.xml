@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ninja Arashi 2</string>
+    <string name="title_activity_main">Ninja Arashi 2</string>
+    <string name="package_name">ir.matin.ninjaarashi2</string>
+    <string name="custom_url_scheme">ir.matin.ninjaarashi2</string>
+</resources>

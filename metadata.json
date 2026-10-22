@@ -1,0 +1,6 @@
+{
+  "name": "Ninja Arashi 2: Shadow's Path",
+  "description": "An intense dark silhouette ninja action platformer inspired by Ninja Arashi 2, featuring katana combat, shurikens, shadow dash, disguise ninjutsu, deadly traps, and boss battles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

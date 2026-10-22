@@ -1,0 +1,15 @@
+{
+  "appId": "ir.matin.ninjaarashi2",
+  "appName": "Ninja Arashi 2",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#000000",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "useLegacyBridge": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
