@@ -5,6 +5,13 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // Relative base is REQUIRED: the web build is published to GitHub Pages
+    // under https://matin-mohebi.github.io/ninja-arashi-2-apk/ (project
+    // subpath). With the default base '/' the built index.html references
+    // /assets/* which 404s there and renders a blank white page.
+    // './' also keeps Capacitor (https://localhost/) and Neutralino
+    // (app://internal/) desktop builds working unchanged.
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
