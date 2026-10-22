@@ -20,6 +20,18 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 
 ---
 
+<div align="center">
+
+## ⬇️ دانلود | Download
+
+**📱 [دانلود APK — Ninja-Arashi-2-v1.0.0.apk (~21 MB)](../../releases/download/v1.0.0/Ninja-Arashi-2-v1.0.0.apk)**
+
+**🌐 [بازی آنلاین در مرورگر (بدون نصب)](https://matin-mohebi.github.io/ninja-arashi-2-apk/)** | [Releases](../../releases)
+
+</div>
+
+---
+
 ## 📖 درباره بازی | About
 
 **فارسی:**
