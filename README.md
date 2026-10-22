@@ -110,3 +110,15 @@ Artifact ها ۹۰ روز قابل دانلود هستند.
 ## 📄 License
 
 Game code: MIT — art assets: project-internal. "Ninja Arashi" is a trademark of its respective owner; this is a fan-inspired original implementation.
+
+---
+
+## 📞 تماس با سازنده | Contact
+
+**matin-code** — طراح سایت و توسعه‌دهنده وب | Web Designer & Developer
+
+[![Telegram](https://img.shields.io/badge/Telegram-@matin3620-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/matin3620)
+[![Instagram](https://img.shields.io/badge/Instagram-@matin__web__site-E4405F?style=flat-square&logo=instagram&logoColor=white)](https://instagram.com/matin_web_site)
+[![Phone](https://img.shields.io/badge/Phone-09195394891-25D366?style=flat-square&logo=phone&logoColor=white)](tel:09195394891)
+[![Website](https://img.shields.io/badge/Website-matinzeus.ir-9146FF?style=flat-square&logo=googlechrome&logoColor=white)](https://matinzeus.ir)
+[![Config Store](https://img.shields.io/badge/Config_Store-matin--wp--pro.ir-FF6D00?style=flat-square)](https://matin-wp-pro.ir)
