@@ -24,7 +24,11 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 
 ## ⬇️ دانلود | Download
 
-**📱 [دانلود APK امضاشده — NINJA-v1.2.1.apk (~11 MB)](../../releases/download/v1.2.1/NINJA-v1.2.1.apk)**
+**📱 [دانلود APK اندروید — NINJA-v1.3.0.apk (~6 MB)](../../releases/download/v1.3.0/NINJA-v1.3.0.apk)**
+
+**🪟 [دانلود برای ویندوز — NINJA-v1.3.0-win-x64.zip (~10 MB)](../../releases/download/v1.3.0/NINJA-v1.3.0-win-x64.zip)** — خارج کنید و `NINJA-win_x64.exe` را اجرا کنید (ویندوز ۱۰/۱۱)
+
+**🐧 [نسخه لینوکس — NINJA-v1.3.0-linux-x64.zip](../../releases/download/v1.3.0/NINJA-v1.3.0-linux-x64.zip)** — `chmod +x NINJA-linux_x64 && ./NINJA-linux_x64`
 
 **🌐 [بازی آنلاین در مرورگر (بدون نصب)](https://matin-mohebi.github.io/ninja-arashi-2-apk/)** | [Releases](../../releases)
 
@@ -66,6 +70,14 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 | 🔄 Rotate Hint | در وب، اگر گوشی عمودی باشد راهنمای «گوشی را بچرخانید» نشان داده می‌شود |
 | 📐 Dynamic Viewport | چیدمان با `100dvh` — بدون جاافتادن پشت نوار مرورگر موبایل |
 | ⏸️ Auto-Pause | رفتن به پس‌زمینه = توقف خودکار بازی و موزیک |
+
+## 🪟 تغییرات v1.3.0 | What's New
+
+- 🖥️ **نسخه ویندوز و لینوکس اضافه شد!** — بازی حالا به‌صورت اپ دسکتاپ با پوستهٔ سبک Neutralino (WebView2) اجرا می‌شود؛ فقط ~۱۰ مگابایت — بدون Electron سنگین
+- 🪟 ویندوز: ZIP را باز کنید و `NINJA-win_x64.exe` را اجرا کنید (ویندوز ۱۰/۱۱ با WebView2)
+- 🐧 لینوکس: `chmod +x NINJA-linux_x64 && ./NINJA-linux_x64`
+- 🎨 آیکون اختصاصی بازی (شوریکن) برای پنجره، فاوآیکون و دسکتاپ
+- 🤖 ساخت و انتشار دسکتاپ هم کاملاً خودکار شد — با هر ریلیز، ZIP ویندوز و لینوکس هم به Releases اضافه می‌شود
 
 ## 🩹 تغییرات v1.2.1 | What's Changed
 

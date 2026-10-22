@@ -16,3 +16,7 @@ android/app/src/main/assets/public/
 android/capacitor-cordova-android-plugins/
 *.keystore
 !debug.keystore
+
+# neutralino desktop build
+bin/
+desktop-dist/

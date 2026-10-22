@@ -1,0 +1,45 @@
+{
+  "applicationId": "ir.matin.ninja",
+  "version": "1.3.0",
+  "defaultMode": "window",
+  "port": 0,
+  "documentRoot": "/dist/",
+  "url": "/",
+  "enableServer": true,
+  "enableNativeAPI": true,
+  "tokenSecurity": "one-time",
+  "exportAuthInfo": false,
+  "logging": {
+    "enabled": true,
+    "writeToLogFile": false
+  },
+  "nativeAllowList": [
+    "app.*",
+    "window.*",
+    "debug.*"
+  ],
+  "modes": {
+    "window": {
+      "title": "NINJA",
+      "width": 1280,
+      "height": 720,
+      "minWidth": 480,
+      "minHeight": 320,
+      "fullScreen": false,
+      "alwaysOnTop": false,
+      "icon": "/dist/icon.png",
+      "resizable": true,
+      "maximize": false,
+      "exitProcessOnClose": true
+    }
+  },
+  "cli": {
+    "binaryName": "NINJA",
+    "resourcesPath": "/dist/",
+    "extensionsPath": "/extensions/",
+    "clientLibrary": "/dist/neutralino.js",
+    "binaryVersion": "6.10.0",
+    "clientVersion": "6.10.0",
+    "distributionPath": "desktop-dist"
+  }
+}

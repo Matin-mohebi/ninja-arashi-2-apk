@@ -120,3 +120,57 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: true
+
+  desktop:
+    # Windows + Linux desktop bundles (Neutralino — lightweight WebView2 shell)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Build desktop bundles
+        run: |
+          npx --yes @neutralinojs/neu@11.8.0 update
+          npx --yes @neutralinojs/neu@11.8.0 build --release
+          ls -la desktop-dist/NINJA/
+
+      - name: Package desktop zips
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          cd desktop-dist/NINJA
+          zip -q -r "../../NINJA-v${VERSION}-win-x64.zip" NINJA-win_x64.exe resources.neu
+          zip -q -r "../../NINJA-v${VERSION}-linux-x64.zip" NINJA-linux_x64 resources.neu
+          cd ../..
+          ls -la NINJA-v*-*.zip
+          echo "DESKTOP_VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NINJA-v${{ env.DESKTOP_VERSION }}-desktop
+          path: NINJA-v*-x64.zip
+          if-no-files-found: error
+
+      - name: Attach desktop bundles to GitHub Release
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          if [ -z "$TAG" ]; then TAG="${{ github.ref_name }}"; fi
+          gh release upload "$TAG" NINJA-v*-x64.zip --clobber --repo "$GITHUB_REPOSITORY"
+          echo "Desktop bundles attached to release $TAG"
