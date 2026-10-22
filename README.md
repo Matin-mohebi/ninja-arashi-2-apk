@@ -24,7 +24,7 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 
 ## ⬇️ دانلود | Download
 
-**📱 [دانلود APK — NINJA-v1.2.0.apk (~37 MB)](../../releases/download/v1.2.0/NINJA-v1.2.0.apk)**
+**📱 [دانلود APK امضاشده — NINJA-v1.2.1.apk (~11 MB)](../../releases/download/v1.2.1/NINJA-v1.2.1.apk)**
 
 **🌐 [بازی آنلاین در مرورگر (بدون نصب)](https://matin-mohebi.github.io/ninja-arashi-2-apk/)** | [Releases](../../releases)
 
@@ -66,6 +66,14 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 | 🔄 Rotate Hint | در وب، اگر گوشی عمودی باشد راهنمای «گوشی را بچرخانید» نشان داده می‌شود |
 | 📐 Dynamic Viewport | چیدمان با `100dvh` — بدون جاافتادن پشت نوار مرورگر موبایل |
 | ⏸️ Auto-Pause | رفتن به پس‌زمینه = توقف خودکار بازی و موزیک |
+
+## 🩹 تغییرات v1.2.1 | What's Changed
+
+- 📦 **حجم APK از ~۳۷ مگابایت به ~۱۱ مگابایت کاهش یافت** — موسیقی با حفظ فرمت و کیفیت شنیداری بازکدگذاری شد (Vorbis ۶۴–۸۰ کیلوبیت)، تمام اسپلش‌های PNG به WebP بهینه تبدیل شدند (~۱۵MB → ~۰.۷MB)، تصاویر پس‌زمینه فشرده و تصویر بلااستفاده حذف شد
+- 🔐 **APK رسماً امضا شد** — ساخت Release با keystore اختصاصی؛ نسخه‌های بعدی بدون حذف بازی، مستقیم روی هم نصب می‌شوند
+- 🔢 **همگام‌سازی خودکار نسخه** — `versionName` و `versionCode` اندروید مستقیم از `package.json` خوانده می‌شوند (۱.۲.۱ ← ۱۰۲۰۱)؛ دیگر هیچ‌وقت با نسخه ریلیز گیتهاب ناهماهنگ نمی‌شود
+- 🤖 **انتشار خودکار** — workflow جدید: هر ریلیز/تگ، APK امضاشده را مستقیم به GitHub Releases پیوست می‌کند؛ وب هم با هر push به main روی GitHub Pages مستقر می‌شود
+- 🗜️ minify + shrinkResources در ساخت Release فعال شد
 
 ## 🚀 تغییرات v1.2.0 | What's New
 

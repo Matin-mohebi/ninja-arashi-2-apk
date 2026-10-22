@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ── Capacitor (release minify support) ──────────────────────────────────────
+# Capacitor's JS bridge resolves plugin classes via reflection at runtime.
+-keep class com.getcapacitor.** { *; }
+-keep class ir.matin.ninjaarashi2.** { *; }
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keepattributes JavascriptInterface
+-dontwarn com.getcapacitor.**

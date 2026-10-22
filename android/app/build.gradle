@@ -1,5 +1,47 @@
 apply plugin: 'com.android.application'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Version auto-sync (fixes drift between GitHub release and Android build)
+// versionName/versionCode always derive from package.json in the repo root,
+// so the Android build can never fall behind the published release.
+// versionCode scheme: major*10000 + minor*100 + patch  →  1.2.1 = 10201
+// Bump package.json version for every new release; versionCode rises with it.
+// ─────────────────────────────────────────────────────────────────────────────
+def pkgVersion = { ->
+    try {
+        def pkgFile = file('../../package.json')
+        def pkg = new groovy.json.JsonSlurper().parseText(pkgFile.text)
+        return pkg.version.toString()
+    } catch (Exception ignored) {
+        return '1.2.1'
+    }
+}
+def computeVersionCode = { String v ->
+    def p = v.tokenize('.')
+    if (p.size() >= 3) {
+        try {
+            return (p[0] as int) * 10000 + (p[1] as int) * 100 + (p[2] as int)
+        } catch (Exception ignored) {}
+    }
+    return 10201
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Release signing — CI injects the keystore via repo secrets:
+//   NINJA_KEYSTORE_BASE64, NINJA_STORE_PASSWORD, NINJA_KEY_ALIAS, NINJA_KEY_PASSWORD
+// The workflow decodes the base64 keystore to android/app/ninja.keystore.
+// Locally (no keystore present) release builds fall back to debug signing,
+// so ./gradlew assembleRelease never fails on a dev machine.
+// ─────────────────────────────────────────────────────────────────────────────
+def keystoreFile = file('ninja.keystore')
+def ksStorePassword = System.getenv('NINJA_STORE_PASSWORD')
+def ksKeyAlias = System.getenv('NINJA_KEY_ALIAS')
+def ksKeyPassword = System.getenv('NINJA_KEY_PASSWORD')
+def keystoreBase64 = System.getenv('NINJA_KEYSTORE_BASE64')
+def releaseSigningConfigured = keystoreFile.isFile() &&
+        (keystoreBase64 != null && !keystoreBase64.trim().isEmpty()) &&
+        [ksStorePassword, ksKeyAlias, ksKeyPassword].every { it != null && !it.trim().isEmpty() }
+
 android {
     namespace "ir.matin.ninjaarashi2"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +49,8 @@ android {
         applicationId "ir.matin.ninjaarashi2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode computeVersionCode(pkgVersion())
+        versionName pkgVersion()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +58,20 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            storeFile keystoreFile
+            storePassword ksStorePassword
+            keyAlias ksKeyAlias
+            keyPassword ksKeyPassword
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig releaseSigningConfigured ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
