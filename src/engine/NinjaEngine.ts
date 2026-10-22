@@ -1,5 +1,6 @@
 import {
   LevelData,
+  LevelTheme,
   PlayerStats,
   Projectile,
   Particle,
@@ -8,6 +9,7 @@ import {
   Rect,
 } from '../types/game';
 import { sounds } from '../audio/soundManager';
+import { SKINS } from '../utils/skins';
 
 export interface EngineCallbacks {
   onHealthChange: (hp: number) => void;
@@ -20,7 +22,98 @@ export interface EngineCallbacks {
   onBossHpChange?: (hp: number, maxHp: number) => void;
   /** Fired when the player activates a checkpoint so the shell can respawn there on death. */
   onCheckpoint?: (spawn: { x: number; y: number }) => void;
+  /** v1.2.0 meta hooks — lifetime stats / achievements. */
+  onJump?: () => void;
+  onKill?: () => void;
+  onDeath?: () => void;
 }
+
+/** Live-applied presentation switches (settings screen mutates this object). */
+export interface VisualSettings {
+  /** Screen shake on hurt / boss slams. */
+  shake: boolean;
+  /** Reduced-particles mode: no ambient weather, fewer combat particles. */
+  reducedParticles: boolean;
+}
+
+interface AmbientPt {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  alpha: number;
+  phase: number;
+  phaseSpeed: number;
+  /** bush theme key */
+  kind: 'firefly' | 'dust' | 'snow' | 'ember' | 'petal';
+  color: string;
+}
+
+interface ThemeConfig {
+  /** Sky gradient stops (top -> horizon -> bottom). */
+  sky: [string, string, string];
+  /** Celestial body: none | moon | bloodMoon | sun */
+  celestial: 'none' | 'moon' | 'bloodMoon' | 'sun';
+  /** Far silhouette ridge color (0.2x parallax). */
+  ridgeFar: string;
+  /** Mid silhouette color (0.4x parallax). */
+  ridgeMid: string;
+  /** Mid layer shape. */
+  mid: 'bamboo' | 'pillars' | 'pagoda' | 'temple';
+  /** Platform palette. */
+  plat: { fill: string; rim: string; tuft: string | null };
+  /** Ambient weather kinds + colors. */
+  ambient: { kind: AmbientPt['kind']; colors: string[] }[];
+  /** Ambient light haze tint drawn over the sky base (rgba). */
+  haze: string;
+}
+
+const THEME_CONFIG: Record<LevelTheme, ThemeConfig> = {
+  bamboo: {
+    sky: ['#0a1626', '#123049', '#050a12'],
+    celestial: 'moon',
+    ridgeFar: 'rgba(10, 22, 38, 0.9)',
+    ridgeMid: 'rgba(6, 12, 20, 0.96)',
+    mid: 'bamboo',
+    plat: { fill: '#0a0a0c', rim: '#1c221e', tuft: '#0a0a0c' },
+    ambient: [
+      { kind: 'firefly', colors: ['#fde68a', '#a3e635'] },
+      { kind: 'dust', colors: ['#94a3b8'] },
+    ],
+    haze: 'rgba(20, 60, 80, 0.10)',
+  },
+  dungeon: {
+    sky: ['#0b0b12', '#141422', '#050508'],
+    celestial: 'none',
+    ridgeFar: 'rgba(22, 22, 36, 0.9)',
+    ridgeMid: 'rgba(10, 10, 16, 0.96)',
+    mid: 'pillars',
+    plat: { fill: '#0d0d12', rim: '#26262f', tuft: null },
+    ambient: [{ kind: 'snow', colors: ['#e2e8f0', '#cbd5e1'] }],
+    haze: 'rgba(70, 70, 110, 0.08)',
+  },
+  citadel: {
+    sky: ['#1c0f24', '#3b1227', '#09050d'],
+    celestial: 'bloodMoon',
+    ridgeFar: 'rgba(18, 10, 24, 0.85)',
+    ridgeMid: 'rgba(10, 5, 12, 0.96)',
+    mid: 'pagoda',
+    plat: { fill: '#0a0a0c', rim: '#1c221e', tuft: '#0a0a0c' },
+    ambient: [{ kind: 'ember', colors: ['#fb923c', '#ef4444', '#f59e0b'] }],
+    haze: 'rgba(120, 30, 40, 0.10)',
+  },
+  dawn: {
+    sky: ['#2e1b4e', '#b4587a', '#f5b97f'],
+    celestial: 'sun',
+    ridgeFar: 'rgba(88, 60, 120, 0.55)',
+    ridgeMid: 'rgba(58, 38, 84, 0.8)',
+    mid: 'temple',
+    plat: { fill: '#4a3325', rim: '#c98d52', tuft: '#6b4c33' },
+    ambient: [{ kind: 'petal', colors: ['#fbcfe8', '#fda4af', '#fef3c7'] }],
+    haze: 'rgba(255, 190, 120, 0.12)',
+  },
+};
 
 export class NinjaEngine {
   private canvas: HTMLCanvasElement;
@@ -74,9 +167,26 @@ export class NinjaEngine {
   private scrollsCollected: number = 0;
   private keys: Record<string, boolean> = {};
 
-  // Background image
+  // Optional background image API (unused since v1.2.0 — see constructor note)
   private bgImage: HTMLImageElement | null = null;
   private titleBgImage: HTMLImageElement | null = null;
+
+  // --- v1.2.0: themed presentation + juice ---
+  private visual: VisualSettings;
+  private theme: LevelTheme = 'bamboo';
+  private cfg: ThemeConfig = THEME_CONFIG.bamboo;
+  /** Freeze-frame on enemy kills (hit-stop, seconds). */
+  private hitStopTimer = 0;
+  /** Landing-dust detection. */
+  private prevGrounded = false;
+  private prevVy = 0;
+  /** Throttle for skin trail ghosts. */
+  private trailTimer = 0;
+  /** Themed ambient weather (fireflies/snow/embers/petals). */
+  private ambient: AmbientPt[] = [];
+  /** Cached sky gradient (rebuilt on viewport height change / theme switch). */
+  private skyGrad: CanvasGradient | null = null;
+  private skyGradH = 0;
 
   /** Optional checkpoint spawn point (set by the shell when the player died). */
   private spawnOverride: { x: number; y: number } | null = null;
@@ -94,7 +204,8 @@ export class NinjaEngine {
     stats: PlayerStats,
     callbacks: EngineCallbacks,
     bgImgUrl?: string,
-    spawnOverride?: { x: number; y: number }
+    spawnOverride?: { x: number; y: number },
+    visual?: VisualSettings
   ) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
@@ -102,15 +213,17 @@ export class NinjaEngine {
     this.level = JSON.parse(JSON.stringify(level)); // deep clone so restarts work fresh
     this.stats = stats;
     this.callbacks = callbacks;
+    this.visual = visual || { shake: true, reducedParticles: false };
+    this.theme = level.theme || 'bamboo';
+    this.cfg = THEME_CONFIG[this.theme];
+    this.skyGrad = null;
     this.spawnOverride = spawnOverride || null;
+    // NOTE: bgImgUrl is intentionally no longer loaded — every level renders
+    // its themed procedural sky + parallax silhouettes (v1.2.0), which is
+    // cheaper and more coherent than the old JPEG backdrop.
     // Bind the loop ONCE — binding per frame inside requestAnimationFrame
     // allocated a new closure every frame (GC churn on mobile).
     this.boundLoop = this.loop.bind(this);
-
-    if (bgImgUrl) {
-      this.bgImage = new Image();
-      this.bgImage.src = bgImgUrl;
-    }
 
     this.resetLevel();
   }
@@ -177,23 +290,8 @@ export class NinjaEngine {
       (c) => c.type === 'scroll' && c.collected
     ).length;
 
-    // Spawn ambient sakura petals
-    for (let i = 0; i < 35; i++) {
-      this.particles.push({
-        x: Math.random() * this.viewW + this.camera.x,
-        y: Math.random() * this.viewH + this.camera.y,
-        vx: -(0.5 + Math.random() * 1.5),
-        vy: 0.8 + Math.random() * 1.2,
-        size: 3 + Math.random() * 4,
-        color: Math.random() > 0.4 ? '#fb7185' : '#f43f5e',
-        alpha: 0.5 + Math.random() * 0.4,
-        life: 100,
-        maxLife: 100,
-        type: 'sakura',
-        rotation: Math.random() * Math.PI,
-        vRot: 0.02 + Math.random() * 0.04,
-      });
-    }
+    // Spawn themed ambient weather (fireflies / snow / embers / petals)
+    this.spawnAmbient();
 
     this.callbacks.onHealthChange(this.stats.hp);
     this.callbacks.onShurikensChange(this.player.shurikens, 1);
@@ -236,6 +334,7 @@ export class NinjaEngine {
       this.player.isWallSliding = false;
       this.createSparks(this.player.x + (this.player.wallDir === 1 ? this.player.w : 0), this.player.y + 20, 8);
       sounds.playJump();
+      this.callbacks.onJump?.();
       return;
     }
 
@@ -245,12 +344,14 @@ export class NinjaEngine {
       this.player.isGrounded = false;
       this.player.jumpCount = 1;
       sounds.playJump();
+      this.callbacks.onJump?.();
       this.createPuff(this.player.x + this.player.w / 2, this.player.y + this.player.h, 6);
     } else if (this.player.jumpCount === 1) {
       // Double jump flip
       this.player.vy = -13.2;
       this.player.jumpCount = 2;
       sounds.playJump();
+      this.callbacks.onJump?.();
       this.createPuff(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, 8, '#ffffff');
     }
   }
@@ -330,6 +431,7 @@ export class NinjaEngine {
         if (enemy.hp <= 0) {
           enemy.state = 'dead';
           this.killsCount++;
+          this.registerKill();
           this.stats.coins += 15;
           this.callbacks.onCollect(this.stats.coins, this.stats.diamonds, this.scrollsCollected);
           this.createBlood(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, 25);
@@ -382,7 +484,8 @@ export class NinjaEngine {
     this.player.vy = 0;
     sounds.playDash();
 
-    // Dash trail effect
+    // Dash trail effect (tinted with the equipped skin)
+    const skinDef = SKINS[this.stats.skin] || SKINS.arashi;
     for (let i = 0; i < 5; i++) {
       this.particles.push({
         x: this.player.x - this.player.facing * (i * 12),
@@ -390,7 +493,7 @@ export class NinjaEngine {
         vx: -this.player.facing * 1.5,
         vy: 0,
         size: 20,
-        color: '#38bdf8',
+        color: skinDef.trail,
         alpha: 0.7,
         life: 0.25,
         maxLife: 0.25,
@@ -415,6 +518,7 @@ export class NinjaEngine {
         if (enemy.hp <= 0) {
           enemy.state = 'dead';
           this.killsCount++;
+          this.registerKill();
           this.stats.coins += 20;
           this.callbacks.onCollect(this.stats.coins, this.stats.diamonds, this.scrollsCollected);
         }
@@ -450,6 +554,13 @@ export class NinjaEngine {
   }
 
   private update(dt: number) {
+    // 0. Hit-stop: freeze the whole simulation briefly after a kill for impact
+    //    (render keeps running, so the freeze-frame reads as intentional juice).
+    if (this.hitStopTimer > 0) {
+      this.hitStopTimer -= dt;
+      return;
+    }
+
     // 1. Shuriken recharge timer
     if (this.player.shurikens < this.stats.shurikensMax) {
       this.player.shurikenRechargeTimer += dt;
@@ -515,6 +626,18 @@ export class NinjaEngine {
       }
     }
 
+    // 6b. Skin trail ghosts (dash streaks + faint running wisps)
+    this.trailTimer -= dt;
+    if (this.trailTimer <= 0) {
+      if (this.player.dashing) {
+        this.trailTimer = 0.028;
+        this.spawnDashGhost();
+      } else if (this.player.isGrounded && Math.abs(this.player.vx) > 5.5 && !this.player.disguised) {
+        this.trailTimer = 0.12;
+        this.spawnRunWisp();
+      }
+    }
+
     // 7. Player horizontal movement from keys
     if (!this.player.dashing && !this.player.disguised) {
       const left = this.keys['a'] || this.keys['arrowleft'];
@@ -559,7 +682,14 @@ export class NinjaEngine {
     }
 
     // 9. Integrate Player Position & Collisions
+    this.prevGrounded = this.player.isGrounded;
+    this.prevVy = this.player.vy;
     this.movePlayerWithCollisions(dt);
+
+    // Landing dust: noticeable impact after a fall
+    if (!this.prevGrounded && this.player.isGrounded && this.prevVy > 6.5) {
+      this.createLandingDust();
+    }
 
     // 10. Update Traps
     this.updateTraps(dt);
@@ -585,6 +715,7 @@ export class NinjaEngine {
 
     // 16. Update Particles
     this.updateParticles(dt);
+    this.updateAmbient(dt);
 
     // 17. Smooth Camera Lerp
     this.camera.targetX = this.player.x - this.viewW / 2 + (this.player.facing * 120);
@@ -833,6 +964,8 @@ export class NinjaEngine {
       boss.x = Math.max(1800, Math.min(2900, this.player.x + targetSide * 160));
       this.createPuff(boss.x + boss.w / 2, boss.y + boss.h / 2, 25, '#7f1d1d');
       sounds.playDash();
+      // Slam impact juice
+      this.camera.shake = 8;
     }
 
     // Attacks
@@ -860,6 +993,7 @@ export class NinjaEngine {
         // Melee leap rush
         boss.vx = boss.direction * 9.5;
         sounds.playDash();
+        this.camera.shake = 5;
       }
     }
 
@@ -917,6 +1051,7 @@ export class NinjaEngine {
             if (enemy.hp <= 0) {
               enemy.state = 'dead';
               this.killsCount++;
+              this.registerKill();
               this.stats.coins += 15;
               this.callbacks.onCollect(this.stats.coins, this.stats.diamonds, this.scrollsCollected);
             }
@@ -1014,7 +1149,7 @@ export class NinjaEngine {
 
     this.stats.hp -= amount;
     this.player.invulnerableTimer = 1.0;
-    this.camera.shake = 10;
+    this.camera.shake = 7;
     this.createBlood(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, 20);
     sounds.playHit();
     this.callbacks.onHealthChange(Math.max(0, this.stats.hp));
@@ -1022,6 +1157,12 @@ export class NinjaEngine {
     if (this.stats.hp <= 0) {
       this.triggerGameOver();
     }
+  }
+
+  /** Registers kill juice: brief hit-stop + meta hook. */
+  private registerKill() {
+    this.hitStopTimer = 0.07;
+    this.callbacks.onKill?.();
   }
 
   private triggerVictory() {
@@ -1038,11 +1179,18 @@ export class NinjaEngine {
   private triggerGameOver() {
     this.stop();
     sounds.playDeath();
+    this.callbacks.onDeath?.();
     this.callbacks.onGameOver();
   }
 
   // Particle Generators
+  /** Scales decorative particle counts down in reduced-particles mode. */
+  private pCount(count: number): number {
+    return this.visual.reducedParticles ? Math.ceil(count / 3) : count;
+  }
+
   private createBlood(x: number, y: number, count: number) {
+    count = this.pCount(count);
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 2 + Math.random() * 6;
@@ -1062,6 +1210,7 @@ export class NinjaEngine {
   }
 
   private createSparks(x: number, y: number, count: number, color = '#fef08a') {
+    count = this.pCount(count);
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 3 + Math.random() * 7;
@@ -1081,6 +1230,7 @@ export class NinjaEngine {
   }
 
   private createPuff(x: number, y: number, count: number, color = '#94a3b8') {
+    count = this.pCount(count);
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1 + Math.random() * 4;
@@ -1113,15 +1263,163 @@ export class NinjaEngine {
     return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
   }
 
+  // ------------------------------------------------------ ambient & juice FX
+
+  /** Themed ambient weather: fireflies/dust, snow, embers or petals (cap ~40). */
+  private spawnAmbient() {
+    this.ambient.length = 0;
+    if (this.visual.reducedParticles) return;
+
+    const smallScreen = this.viewW < 520;
+    const cap = smallScreen ? 24 : 40;
+    const kinds = this.cfg.ambient;
+    if (kinds.length === 0) return;
+
+    for (let i = 0; i < cap; i++) {
+      // Spread kinds round-robin (fireflies+dust mix, etc.)
+      const spec = kinds[i % kinds.length];
+      const colors = spec.colors;
+      this.ambient.push(this.makeAmbientPt(spec.kind, colors[i % colors.length], true));
+    }
+  }
+
+  private makeAmbientPt(kind: AmbientPt['kind'], color: string, anywhere: boolean): AmbientPt {
+    const m = 80; // spawn margin outside the viewport
+    const cx = this.camera.x;
+    const cy = this.camera.y;
+    const x = cx + (anywhere ? Math.random() * this.viewW : this.viewW + m);
+    const y = cy + (Math.random() * this.viewH - (anywhere ? 0 : m));
+    switch (kind) {
+      case 'firefly':
+        return { x, y, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.5, size: 1.6 + Math.random() * 1.6, alpha: 0.55 + Math.random() * 0.45, phase: Math.random() * Math.PI * 2, phaseSpeed: 1.5 + Math.random() * 2.5, kind, color };
+      case 'dust':
+        return { x, y, vx: -0.25 - Math.random() * 0.5, vy: 0.08 + Math.random() * 0.2, size: 0.9 + Math.random() * 1.4, alpha: 0.16 + Math.random() * 0.25, phase: Math.random() * Math.PI * 2, phaseSpeed: 0.6 + Math.random(), kind, color };
+      case 'snow':
+        return { x, y, vx: -0.35 - Math.random() * 0.5, vy: 0.55 + Math.random() * 0.9, size: 1.1 + Math.random() * 1.8, alpha: 0.4 + Math.random() * 0.45, phase: Math.random() * Math.PI * 2, phaseSpeed: 0.9 + Math.random() * 1.4, kind, color };
+      case 'ember':
+        return { x, y, vx: -0.15 + Math.random() * 0.5, vy: -(0.5 + Math.random() * 1.1), size: 1 + Math.random() * 1.8, alpha: 0.5 + Math.random() * 0.5, phase: Math.random() * Math.PI * 2, phaseSpeed: 2 + Math.random() * 3, kind, color };
+      case 'petal':
+      default:
+        return { x, y, vx: -0.6 - Math.random() * 0.9, vy: 0.35 + Math.random() * 0.6, size: 1.8 + Math.random() * 2.4, alpha: 0.4 + Math.random() * 0.4, phase: Math.random() * Math.PI * 2, phaseSpeed: 0.8 + Math.random() * 1.4, kind: 'petal', color };
+    }
+  }
+
+  /** Cheap wrap-around update — no allocations, no shadows, precomputed colors. */
+  private updateAmbient(dt: number) {
+    if (this.ambient.length === 0) return;
+    const step = 60 * dt;
+    const m = 90;
+    const left = this.camera.x - m;
+    const right = this.camera.x + this.viewW + m;
+    const top = this.camera.y - m;
+    const bottom = this.camera.y + this.viewH + m;
+
+    for (let i = 0; i < this.ambient.length; i++) {
+      const a = this.ambient[i];
+      a.phase += a.phaseSpeed * dt;
+      // Gentle sway for floaty kinds
+      if (a.kind === 'snow' || a.kind === 'petal' || a.kind === 'ember' || a.kind === 'firefly') {
+        a.x += (a.vx + Math.sin(a.phase) * 0.35) * step;
+      } else {
+        a.x += a.vx * step;
+      }
+      a.y += a.vy * step;
+
+      // Wrap around the camera viewport
+      if (a.x < left) a.x = right;
+      else if (a.x > right) a.x = left;
+      if (a.y < top) a.y = bottom;
+      else if (a.y > bottom) a.y = top;
+    }
+  }
+
+  private renderAmbient(ctx: CanvasRenderingContext2D) {
+    if (this.ambient.length === 0) return;
+    for (let i = 0; i < this.ambient.length; i++) {
+      const a = this.ambient[i];
+      // Precomputed color; cheap phase pulse instead of per-particle shadows
+      const pulse = a.kind === 'firefly' || a.kind === 'ember' ? 0.55 + 0.45 * Math.sin(a.phase * 2.0) : 1;
+      ctx.globalAlpha = a.alpha * pulse;
+      ctx.fillStyle = a.color;
+      if (a.kind === 'petal') {
+        ctx.beginPath();
+        ctx.ellipse(a.x, a.y, a.size, a.size * 0.55, a.phase, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /** Soft dust burst when the player lands hard. */
+  private createLandingDust() {
+    const x = this.player.x + this.player.w / 2;
+    const y = this.player.y + this.player.h;
+    const n = this.pCount(9);
+    for (let i = 0; i < n; i++) {
+      const dir = i % 2 === 0 ? 1 : -1;
+      this.particles.push({
+        x: x + dir * Math.random() * 8,
+        y: y - Math.random() * 4,
+        vx: dir * (0.8 + Math.random() * 2.2),
+        vy: -(0.3 + Math.random() * 1.1),
+        size: 2.5 + Math.random() * 4,
+        color: this.theme === 'dawn' ? '#d8b489' : '#5b5b57',
+        alpha: 0.6,
+        life: 0.3 + Math.random() * 0.25,
+        maxLife: 0.55,
+        type: 'dust',
+      });
+    }
+  }
+
+  /** After-image of the ninja tinted with the equipped skin (dash streaks). */
+  private spawnDashGhost() {
+    const skinDef = SKINS[this.stats.skin] || SKINS.arashi;
+    this.particles.push({
+      x: this.player.x + this.player.w / 2 - this.player.facing * 10,
+      y: this.player.y + this.player.h / 2,
+      vx: -this.player.facing * 2.2,
+      vy: 0,
+      size: 16,
+      color: skinDef.trail,
+      alpha: 0.55,
+      life: 0.22,
+      maxLife: 0.22,
+      type: 'ghost',
+    });
+  }
+
+  /** Faint wisp trailing the ninja while sprinting. */
+  private spawnRunWisp() {
+    const skinDef = SKINS[this.stats.skin] || SKINS.arashi;
+    this.particles.push({
+      x: this.player.x + this.player.w / 2 - this.player.facing * 8,
+      y: this.player.y + this.player.h * 0.75,
+      vx: -this.player.facing * 0.8,
+      vy: -0.2 - Math.random() * 0.4,
+      size: 2 + Math.random() * 2.5,
+      color: Math.random() > 0.5 ? skinDef.trail : skinDef.trail2,
+      alpha: 0.45,
+      life: 0.35 + Math.random() * 0.2,
+      maxLife: 0.55,
+      type: 'spark',
+    });
+  }
+
   // RENDERING
   public render() {
     const ctx = this.ctx;
     const w = this.viewW;
     const h = this.viewH;
 
-    // Apply camera shake
-    const shakeX = (Math.random() - 0.5) * this.camera.shake * 2;
-    const shakeY = (Math.random() - 0.5) * this.camera.shake * 2;
+    // Apply camera shake (0 when the screen-shake setting is off)
+    const shakeAmp = this.visual.shake ? this.camera.shake : 0;
+    const shakeX = (Math.random() - 0.5) * shakeAmp * 2;
+    const shakeY = (Math.random() - 0.5) * shakeAmp * 2;
 
     ctx.save();
     ctx.scale(this.dpr, this.dpr);
@@ -1160,60 +1458,188 @@ export class NinjaEngine {
     // 10. Draw Particles
     this.renderParticles(ctx);
 
+    // 11. Themed ambient weather (fireflies / snow / embers / petals)
+    this.renderAmbient(ctx);
+
     ctx.restore();
   }
 
   private renderParallaxBackground(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    if (this.bgImage && this.bgImage.complete && this.bgImage.naturalWidth > 0) {
-      // Draw parallax image background
-      const parX = -(this.camera.x * 0.25) % w;
-      ctx.drawImage(this.bgImage, parX, 0, w, h);
-      ctx.drawImage(this.bgImage, parX + w, 0, w, h);
-    } else {
-      // Rich procedural twilight / blood moon sky
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-      skyGrad.addColorStop(0, '#1c0f24');
-      skyGrad.addColorStop(0.5, '#3b1227');
-      skyGrad.addColorStop(1, '#09050d');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, h);
+    const cfg = this.cfg;
+    const cam = this.camera;
 
-      // Huge blood red moon
-      const moonX = w * 0.72 - this.camera.x * 0.05;
-      const moonY = h * 0.28;
-      const moonGrad = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 80);
-      moonGrad.addColorStop(0, '#fee2e2');
-      moonGrad.addColorStop(0.3, '#ef4444');
-      moonGrad.addColorStop(0.8, '#991b1b');
-      moonGrad.addColorStop(1, 'rgba(153, 27, 27, 0)');
-      ctx.fillStyle = moonGrad;
+    // --- Sky gradient (cached per viewport height) ---
+    if (!this.skyGrad || this.skyGradH !== h) {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, cfg.sky[0]);
+      g.addColorStop(0.55, cfg.sky[1]);
+      g.addColorStop(1, cfg.sky[2]);
+      this.skyGrad = g;
+      this.skyGradH = h;
+    }
+    ctx.fillStyle = this.skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // --- Celestial body ---
+    if (cfg.celestial === 'moon') {
+      const mx = w * 0.72 - cam.x * 0.05;
+      const my = h * 0.26;
+      const g = ctx.createRadialGradient(mx, my, 6, mx, my, 78);
+      g.addColorStop(0, '#e8f4f8');
+      g.addColorStop(0.35, '#9fd8e8');
+      g.addColorStop(0.85, 'rgba(80, 140, 160, 0.35)');
+      g.addColorStop(1, 'rgba(80, 140, 160, 0)');
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(moonX, moonY, 80, 0, Math.PI * 2);
+      ctx.arc(mx, my, 78, 0, Math.PI * 2);
       ctx.fill();
-
-      // Silhouetted mountain ridges
-      ctx.fillStyle = 'rgba(18, 10, 24, 0.75)';
+    } else if (cfg.celestial === 'bloodMoon') {
+      const mx = w * 0.72 - cam.x * 0.05;
+      const my = h * 0.28;
+      const g = ctx.createRadialGradient(mx, my, 10, mx, my, 80);
+      g.addColorStop(0, '#fee2e2');
+      g.addColorStop(0.3, '#ef4444');
+      g.addColorStop(0.8, '#991b1b');
+      g.addColorStop(1, 'rgba(153, 27, 27, 0)');
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(0, h * 0.6);
-      for (let x = 0; x <= w; x += 100) {
-        const my = h * 0.55 + Math.sin((x + this.camera.x * 0.1) * 0.005) * 60;
-        ctx.lineTo(x, my);
+      ctx.arc(mx, my, 80, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (cfg.celestial === 'sun') {
+      // Rising dawn sun on the horizon
+      const sx = w * 0.62 - cam.x * 0.04;
+      const sy = h * 0.52;
+      const g = ctx.createRadialGradient(sx, sy, 12, sx, sy, 130);
+      g.addColorStop(0, '#fff7e0');
+      g.addColorStop(0.25, '#ffd98a');
+      g.addColorStop(0.6, 'rgba(255, 170, 100, 0.45)');
+      g.addColorStop(1, 'rgba(255, 150, 90, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 130, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // --- Far ridge line (0.2x parallax) ---
+    this.drawRidge(ctx, w, h, cam.x * 0.2, h * 0.62, 55, 0.004, cfg.ridgeFar);
+
+    // --- Mid silhouette layer (0.4x parallax) ---
+    this.drawMidLayer(ctx, w, h, cam.x * 0.4);
+
+    // --- Light haze band over the base sky ---
+    ctx.fillStyle = cfg.haze;
+    ctx.fillRect(0, h * 0.45, w, h * 0.55);
+  }
+
+  /** Rolling mountain ridge (cheap sin curve, screen-space). */
+  private drawRidge(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    offset: number,
+    baseY: number,
+    amp: number,
+    freq: number,
+    color: string
+  ) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let x = 0; x <= w + 20; x += 24) {
+      const wx = x + offset;
+      const y = baseY - (Math.sin(wx * freq) * 0.6 + Math.sin(wx * freq * 2.7 + 1.7) * 0.4) * amp;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w + 20, h);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /** Theme mid-ground: bamboo stalks / dungeon pillars / pagodas / temple columns. */
+  private drawMidLayer(ctx: CanvasRenderingContext2D, w: number, h: number, offset: number) {
+    const cfg = this.cfg;
+    const groundY = h * 0.86;
+
+    if (cfg.mid === 'bamboo') {
+      // Clusters of tall bamboo stalks on the mid ridge
+      ctx.fillStyle = cfg.ridgeMid;
+      const spacing = 140;
+      const start = -((offset % spacing) + spacing) % spacing - spacing;
+      for (let sx = start; sx < w + spacing; sx += spacing) {
+        const wx = sx + offset; // world-ish x for deterministic heights
+        const stalkH = 130 + ((Math.sin(wx * 0.013) + 1) / 2) * 120;
+        const top = groundY - stalkH;
+        ctx.fillRect(sx + 10, top, 7, stalkH);
+        ctx.fillRect(sx + 46, top + 26, 6, stalkH - 26);
+        ctx.fillRect(sx + 88, top + 10, 6, stalkH - 10);
+        // Leaf ticks
+        ctx.fillRect(sx + 2, top + 18, 24, 3);
+        ctx.fillRect(sx + 40, top + 48, 22, 3);
       }
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.fill();
+    } else if (cfg.mid === 'pillars') {
+      // Dungeon colonnade with hanging chains
+      ctx.fillStyle = cfg.ridgeMid;
+      const spacing = 190;
+      const start = -((offset % spacing) + spacing) % spacing - spacing;
+      for (let sx = start; sx < w + spacing; sx += spacing) {
+        ctx.fillRect(sx, groundY - 210, 26, 210);
+        ctx.fillRect(sx - 6, groundY - 218, 38, 10);
+        ctx.fillRect(sx - 6, groundY - 16, 38, 16);
+        // Chain
+        const wx = sx + offset;
+        const chainLen = 60 + ((Math.sin(wx * 0.021) + 1) / 2) * 50;
+        ctx.fillRect(sx + 58, groundY - 240, 3, chainLen);
+      }
+    } else if (cfg.mid === 'pagoda') {
+      // Tiered pagoda towers of the blood-moon citadel
+      ctx.fillStyle = cfg.ridgeMid;
+      const spacing = 260;
+      const start = -((offset % spacing) + spacing) % spacing - spacing;
+      for (let sx = start; sx < w + spacing; sx += spacing) {
+        const wx = sx + offset;
+        const towerH = 150 + ((Math.sin(wx * 0.011) + 1) / 2) * 90;
+        const base = groundY;
+        const top = base - towerH;
+        ctx.fillRect(sx + 20, top + 34, 56, towerH - 34);
+        // Tiered roofs
+        ctx.beginPath();
+        ctx.moveTo(sx + 6, top + 40);
+        ctx.lineTo(sx + 48, top);
+        ctx.lineTo(sx + 90, top + 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(sx + 2, top + 78);
+        ctx.lineTo(sx + 48, top + 40);
+        ctx.lineTo(sx + 94, top + 78);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else {
+      // Dawn temple: sandstone colonnade + torii finials
+      ctx.fillStyle = cfg.ridgeMid;
+      const spacing = 170;
+      const start = -((offset % spacing) + spacing) % spacing - spacing;
+      for (let sx = start; sx < w + spacing; sx += spacing) {
+        ctx.fillRect(sx, groundY - 190, 18, 190);
+        ctx.fillRect(sx - 5, groundY - 198, 28, 9);
+        // Crossbeam
+        ctx.fillRect(sx - 14, groundY - 186, 52, 6);
+        ctx.fillRect(sx - 8, groundY - 172, 40, 5);
+      }
     }
   }
 
   private renderPlatforms(ctx: CanvasRenderingContext2D) {
+    const style = this.cfg.plat;
     for (const plat of this.level.platforms) {
       if (plat.type === 'bamboo') {
         // Bamboo platform (slender wooden bridge with rope ties)
-        ctx.fillStyle = '#1e1b18';
+        ctx.fillStyle = this.theme === 'dawn' ? '#5a4632' : '#1e1b18';
         ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
 
         // Bamboo nodes
-        ctx.strokeStyle = '#3a332a';
+        ctx.strokeStyle = this.theme === 'dawn' ? '#8a6b47' : '#3a332a';
         ctx.lineWidth = 2;
         for (let bx = plat.x + 15; bx < plat.x + plat.w; bx += 22) {
           ctx.beginPath();
@@ -1223,29 +1649,31 @@ export class NinjaEngine {
         }
 
         // Top moss / highlight line
-        ctx.strokeStyle = '#4a5538';
+        ctx.strokeStyle = this.theme === 'dawn' ? '#d9a05f' : '#4a5538';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(plat.x, plat.y + 1);
         ctx.lineTo(plat.x + plat.w, plat.y + 1);
         ctx.stroke();
       } else {
-        // Dark silhouette ground/rock platform
-        ctx.fillStyle = '#0a0a0c';
+        // Theme-tinted silhouette ground/rock platform
+        ctx.fillStyle = style.fill;
         ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
 
-        // Upper rim outline with dark moss sheen
-        ctx.fillStyle = '#1c221e';
+        // Upper rim outline with theme highlight
+        ctx.fillStyle = style.rim;
         ctx.fillRect(plat.x, plat.y, plat.w, 4);
 
-        // Small decorative grass tufts on edges
-        ctx.fillStyle = '#0a0a0c';
-        for (let gx = plat.x + 8; gx < plat.x + plat.w - 8; gx += 28) {
-          ctx.beginPath();
-          ctx.moveTo(gx, plat.y);
-          ctx.lineTo(gx + 3, plat.y - 6);
-          ctx.lineTo(gx + 6, plat.y);
-          ctx.fill();
+        // Small decorative grass tufts on edges (theme opt-in)
+        if (style.tuft) {
+          ctx.fillStyle = style.tuft;
+          for (let gx = plat.x + 8; gx < plat.x + plat.w - 8; gx += 28) {
+            ctx.beginPath();
+            ctx.moveTo(gx, plat.y);
+            ctx.lineTo(gx + 3, plat.y - 6);
+            ctx.lineTo(gx + 6, plat.y);
+            ctx.fill();
+          }
         }
       }
     }
@@ -1478,19 +1906,10 @@ export class NinjaEngine {
       ctx.scale(-1, 1);
     }
 
-    // Eye color according to skin
-    let eyeColor = '#38bdf8'; // Arashi cyan
-    let scarfColor = '#dc2626'; // Red scarf
-    if (this.stats.skin === 'crimson') {
-      eyeColor = '#f43f5e';
-      scarfColor = '#e11d48';
-    } else if (this.stats.skin === 'ghost') {
-      eyeColor = '#e2e8f0';
-      scarfColor = '#64748b';
-    } else if (this.stats.skin === 'golden') {
-      eyeColor = '#fbbf24';
-      scarfColor = '#d97706';
-    }
+    // Eye / scarf colors according to the equipped skin (central registry)
+    const skinDef = SKINS[this.stats.skin] || SKINS.arashi;
+    const eyeColor = skinDef.eye;
+    const scarfColor = skinDef.scarf;
 
     // Ninja Silhouette drawing in classic Arashi style
     ctx.fillStyle = '#050505';
@@ -1754,6 +2173,18 @@ export class NinjaEngine {
         ctx.beginPath();
         ctx.arc(0, 0, pt.size, -Math.PI * 0.35, Math.PI * 0.35);
         ctx.stroke();
+      } else if (pt.type === 'ghost') {
+        // Skin-tinted after-image of the ninja (dash streaks)
+        ctx.translate(pt.x, pt.y);
+        if (pt.rotation) ctx.rotate(pt.rotation);
+        ctx.beginPath();
+        ctx.roundRect(-pt.size * 0.7, -pt.size, pt.size * 1.4, pt.size * 2, 6);
+        ctx.fill();
+      } else if (pt.type === 'dust') {
+        // Soft ground dust (flat disc, no shadow cost)
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         // Blood or spark circle
         ctx.beginPath();

@@ -9,7 +9,7 @@ export type GameState =
 
 export type Language = 'fa' | 'en';
 
-export type PlayerSkin = 'arashi' | 'crimson' | 'ghost' | 'golden';
+export type PlayerSkin = 'arashi' | 'crimson' | 'ghost' | 'golden' | 'frost' | 'ember' | 'void';
 
 export interface PlayerStats {
   maxHp: number;
@@ -22,7 +22,7 @@ export interface PlayerStats {
   disguiseDuration: number; // in seconds
   coins: number;
   diamonds: number;
-  skin: 'arashi' | 'crimson' | 'ghost' | 'golden';
+  skin: PlayerSkin;
   /** Skins permanently unlocked (previously re-locked whenever coins dropped). */
   unlockedSkins: PlayerSkin[];
   levelsCompleted: number[];
@@ -136,12 +136,16 @@ export interface SecretWall {
   broken: boolean;
 }
 
+/** Visual theme driving sky gradient, parallax silhouettes and weather. */
+export type LevelTheme = 'bamboo' | 'dungeon' | 'citadel' | 'dawn';
+
 export interface LevelData {
   id: number;
   titleFa: string;
   titleEn: string;
   subtitleFa: string;
   subtitleEn: string;
+  theme: LevelTheme;
   worldWidth: number;
   worldHeight: number;
   spawnPoint: { x: number; y: number };
@@ -164,7 +168,7 @@ export interface Particle {
   alpha: number;
   life: number;
   maxLife: number;
-  type?: 'blood' | 'spark' | 'smoke' | 'sakura' | 'slash_wave';
+  type?: 'blood' | 'spark' | 'smoke' | 'sakura' | 'slash_wave' | 'ghost' | 'dust';
   rotation?: number;
   vRot?: number;
 }

@@ -8,6 +8,9 @@ class SoundManager {
   private isMuted: boolean = false;
   private musicInterval: number | null = null;
   private isMusicPlaying: boolean = false;
+  /** Master bus for every SFX voice — lets the settings screen scale volume. */
+  private sfxGain: GainNode | null = null;
+  private sfxVolume: number = 0.9;
 
   private initContext() {
     if (!this.ctx && typeof window !== 'undefined') {
@@ -17,15 +20,37 @@ class SoundManager {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    if (this.ctx && !this.sfxGain) {
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = this.isMuted ? 0 : this.sfxVolume;
+      this.sfxGain.connect(this.ctx.destination);
+    }
+  }
+
+  /** Shared output bus for all synthesized voices. */
+  private out(): GainNode {
+    this.initContext();
+    if (!this.sfxGain && this.ctx) {
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = this.isMuted ? 0 : this.sfxVolume;
+      this.sfxGain.connect(this.ctx.destination);
+    }
+    return this.sfxGain!;
   }
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
-    if (muted && this.musicInterval) {
-      clearInterval(this.musicInterval);
-      this.isMusicPlaying = false;
-    } else if (!muted && !this.isMusicPlaying) {
-      this.startAmbientMusic();
+    // NOTE: music is owned by src/audio/music.ts since v1.2.0 — muting here
+    // only silences SFX (music.muted is set by the shell too).
+    if (this.sfxGain && this.ctx) {
+      this.sfxGain.gain.setTargetAtTime(muted ? 0 : this.sfxVolume, this.ctx.currentTime, 0.04);
+    }
+  }
+
+  public setSfxVolume(v: number) {
+    this.sfxVolume = Math.min(1, Math.max(0, v));
+    if (this.sfxGain && this.ctx && !this.isMuted) {
+      this.sfxGain.gain.setTargetAtTime(this.sfxVolume, this.ctx.currentTime, 0.04);
     }
   }
 
@@ -62,7 +87,7 @@ class SoundManager {
 
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     noise.start(t);
 
     // High metal harmonic ring
@@ -75,7 +100,7 @@ class SoundManager {
     oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
 
     osc.connect(oscGain);
-    oscGain.connect(this.ctx.destination);
+    oscGain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.13);
   }
@@ -99,7 +124,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.13);
   }
@@ -122,7 +147,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.19);
   }
@@ -145,7 +170,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.26);
   }
@@ -169,7 +194,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.27);
   }
@@ -192,7 +217,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.36);
   }
@@ -215,7 +240,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.13);
   }
@@ -238,7 +263,7 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.06 + 0.18);
 
       osc.connect(gain);
-      gain.connect(this.ctx!.destination);
+      gain.connect(this.out());
       osc.start(t + idx * 0.06);
       osc.stop(t + idx * 0.06 + 0.2);
     });
@@ -262,7 +287,7 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.6);
 
       osc.connect(gain);
-      gain.connect(this.ctx!.destination);
+      gain.connect(this.out());
       osc.start(t + idx * 0.08);
       osc.stop(t + idx * 0.08 + 0.65);
     });
@@ -286,7 +311,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.36);
   }
@@ -309,7 +334,7 @@ class SoundManager {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start(t);
     osc.stop(t + 0.95);
   }
@@ -332,48 +357,22 @@ class SoundManager {
       gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.12 + 0.7);
 
       osc.connect(gain);
-      gain.connect(this.ctx!.destination);
+      gain.connect(this.out());
       osc.start(t + idx * 0.12);
       osc.stop(t + idx * 0.12 + 0.75);
     });
   }
 
-  // Ambient Japanese Koto / Shamisen Pentatonic Generator
+  /**
+   * @deprecated v1.2.0 — the interval-synthesized koto loop is superseded by
+   * the real sampled soundtrack in src/audio/music.ts. Kept as a no-op so any
+   * stray caller can never double up with the real music engine.
+   */
   public startAmbientMusic() {
-    if (this.isMuted || this.isMusicPlaying) return;
-    this.initContext();
-    if (!this.ctx) return;
-
-    this.isMusicPlaying = true;
-    const scale = [146.83, 155.56, 196.0, 220.0, 233.08, 293.66, 311.13, 392.0]; // D Insen / Hirajoshi scale
-
-    let step = 0;
-    this.musicInterval = window.setInterval(() => {
-      if (this.isMuted || !this.ctx) return;
-      const t = this.ctx.currentTime;
-
-      // Occasional plucked koto note
-      if (Math.random() > 0.3) {
-        const noteIndex = (step * 3 + Math.floor(Math.random() * 3)) % scale.length;
-        const freq = scale[noteIndex];
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(0.08, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(t);
-        osc.stop(t + 1.25);
-      }
-      step++;
-    }, 750);
+    /* intentionally empty — see music.ts */
   }
 
+  /** @deprecated v1.2.0 — no-op, kept for API compatibility. */
   public stopAmbientMusic() {
     if (this.musicInterval) {
       clearInterval(this.musicInterval);

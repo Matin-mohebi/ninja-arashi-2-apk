@@ -2,7 +2,7 @@ import { Language } from '../types/game';
 
 export const t = {
   fa: {
-    gameTitle: 'نینجا آراشی ۲: مسیر سایه‌ها',
+    gameTitle: 'نینجا',
     gameSubtitle: 'نبرد شینوبی در دنیای تاریکی و شمشیر',
     play: 'شروع بازی',
     continue: 'ادامه',
@@ -44,10 +44,13 @@ export const t = {
 
     // Skins
     skinsTitle: 'پوشش‌های شینوبی',
-    skinArashi: 'آراشی اصیل',
+    skinArashi: 'نینجای اصیل',
     skinCrimson: 'شبح سرخ',
     skinGhost: 'رونین نقره‌ای',
     skinGolden: 'استاد زرین',
+    skinFrost: 'یخ',
+    skinEmber: 'اخگر',
+    skinVoid: 'سایهٔ بنفش',
     equipped: 'انتخاب‌شده',
     equip: 'انتخاب',
     locked: 'قفل (نیاز به طومار)',
@@ -64,9 +67,89 @@ export const t = {
     wallJumpTip: 'نکته: با پریدن روی دیوارهای بلند می‌توانید سر بخورید و پرش از دیوار انجام دهید.',
     secretWallTip: 'نکته: دیوارهای ترک‌خورده را با شمشیر بشکنید تا طومارهای مخفی را پیدا کنید.',
     close: 'بستن',
+
+    // ---- v1.2.0: main menu ----
+    startGame: 'شروع بازی',
+    characters: 'شخصیت‌ها',
+    guide: 'راهنما',
+    statsAndAchievements: 'آمار و دستاوردها',
+    backToMenu: 'بازگشت به منو',
+    continueRun: 'ادامه مسیر',
+    newGame: 'از مرحله یک',
+
+    // ---- v1.2.0: settings ----
+    settingsTitle: 'تنظیمات',
+    musicVolume: 'بلندی موسیقی',
+    sfxVolume: 'بلندی جلوه‌های صوتی',
+    screenShake: 'لرزش صفحه',
+    screenShakeDesc: 'لرزش هنگام ضربه و برخورد باس',
+    reducedParticles: 'حالت کم‌ذره (عملکرد بهتر)',
+    reducedParticlesDesc: 'حذف ذرات تزئینی برای گوشی‌های ضعیف‌تر',
+    language: 'زبان',
+    on: 'روشن',
+    off: 'خاموش',
+
+    // ---- v1.2.0: stats & achievements ----
+    statsTitle: 'آمار و دستاوردها',
+    statsPlaytime: 'زمان بازی',
+    statsBestTimes: 'بهترین زمان هر مرحله',
+    statsNoRecord: 'هنوز رکوردی ثبت نشده',
+    statsDeaths: 'مجموع مرگ‌ها',
+    statsLifetimeCoins: 'سکه‌های جمع‌آوری‌شده',
+    statsJumps: 'پرش‌ها',
+    statsKills: 'دشمنان شکست‌خورده',
+    statsScrolls: 'طومارهای یافت‌شده',
+    achievementsTitle: 'دستاوردها',
+    achievementsUnlocked: 'بازشده',
+    achievementsLocked: 'قفل',
+    levelShort: 'مرحله',
+
+    // ---- v1.2.0: achievements ----
+    achievements: {
+      first_win: {
+        name: 'اولین پیروزی',
+        desc: 'اولین مرحله را فتح کن',
+      },
+      flawless: {
+        name: 'بی‌نقص',
+        desc: 'یک مرحله را بدون حتی یک مرگ تمام کن',
+      },
+      speedrun: {
+        name: 'سرعت‌باز',
+        desc: 'یک مرحله را در کمتر از ۶۰ ثانیه تمام کن',
+      },
+      treasure: {
+        name: 'گنج‌وار',
+        desc: 'در مجموع ۱۵۰ سکه جمع کن',
+      },
+      bird: {
+        name: 'پرنده',
+        desc: 'در مجموع ۳۰۰ بار بپر',
+      },
+      scholar: {
+        name: 'استاد طومارها',
+        desc: 'در مجموع ۹ طومار کهن پیدا کن',
+      },
+      slayer: {
+        name: 'تیغ سایه‌ها',
+        desc: 'در مجموع ۴۰ دشمن را شکست بده',
+      },
+      wealthy: {
+        name: 'خزانه‌دار',
+        desc: 'همزمان ۳۰۰ سکه داشته باش',
+      },
+      phoenix: {
+        name: 'ققنوس',
+        desc: '۱۰ بار شکست بخور و دوباره بلند شو',
+      },
+      master: {
+        name: 'شینوبی کامل',
+        desc: 'هر چهار مرحله را تمام کن',
+      },
+    },
   },
   en: {
-    gameTitle: "Ninja Arashi 2: Shadow's Path",
+    gameTitle: "NINJA",
     gameSubtitle: 'A Shinobi Journey Through Blood & Steel',
     play: 'Play Campaign',
     continue: 'Continue',
@@ -106,10 +189,13 @@ export const t = {
     maxLevel: 'Max Level',
 
     skinsTitle: 'Shinobi Outfits',
-    skinArashi: 'Original Arashi',
+    skinArashi: 'Original Ninja',
     skinCrimson: 'Crimson Ghost',
     skinGhost: 'Silver Ronin',
     skinGolden: 'Golden Shinobi',
+    skinFrost: 'Frost',
+    skinEmber: 'Ember',
+    skinVoid: 'Void',
     equipped: 'Equipped',
     equip: 'Equip',
     locked: 'Locked (Requires Scrolls)',
@@ -125,6 +211,86 @@ export const t = {
     wallJumpTip: 'Tip: Grip vertical walls to wall-slide and kick off for high wall-jumps.',
     secretWallTip: 'Tip: Slash cracked rock walls to reveal hidden rooms and secret scrolls.',
     close: 'Close',
+
+    // ---- v1.2.0: main menu ----
+    startGame: 'Start Game',
+    characters: 'Characters',
+    guide: 'How to Play',
+    statsAndAchievements: 'Stats & Achievements',
+    backToMenu: 'Back to Menu',
+    continueRun: 'Continue Run',
+    newGame: 'From Level 1',
+
+    // ---- v1.2.0: settings ----
+    settingsTitle: 'Settings',
+    musicVolume: 'Music Volume',
+    sfxVolume: 'SFX Volume',
+    screenShake: 'Screen Shake',
+    screenShakeDesc: 'Camera kick on hits and boss slams',
+    reducedParticles: 'Reduced Particles (better perf)',
+    reducedParticlesDesc: 'Disables decorative particles on weaker phones',
+    language: 'Language',
+    on: 'On',
+    off: 'Off',
+
+    // ---- v1.2.0: stats & achievements ----
+    statsTitle: 'Stats & Achievements',
+    statsPlaytime: 'Playtime',
+    statsBestTimes: 'Best Time per Level',
+    statsNoRecord: 'No record yet',
+    statsDeaths: 'Total Deaths',
+    statsLifetimeCoins: 'Coins Collected (lifetime)',
+    statsJumps: 'Jumps',
+    statsKills: 'Enemies Defeated',
+    statsScrolls: 'Scrolls Found',
+    achievementsTitle: 'Achievements',
+    achievementsUnlocked: 'Unlocked',
+    achievementsLocked: 'Locked',
+    levelShort: 'Level',
+
+    // ---- v1.2.0: achievements ----
+    achievements: {
+      first_win: {
+        name: 'First Victory',
+        desc: 'Complete your first level',
+      },
+      flawless: {
+        name: 'Flawless',
+        desc: 'Finish a level without dying once',
+      },
+      speedrun: {
+        name: 'Speedrunner',
+        desc: 'Finish any level under 60 seconds',
+      },
+      treasure: {
+        name: 'Treasure-Bound',
+        desc: 'Collect 150 coins in total',
+      },
+      bird: {
+        name: 'Bird of Prey',
+        desc: 'Jump 300 times in total',
+      },
+      scholar: {
+        name: 'Scroll Master',
+        desc: 'Find 9 ancient scrolls in total',
+      },
+      slayer: {
+        name: 'Shadow\'s Blade',
+        desc: 'Defeat 40 enemies in total',
+      },
+      wealthy: {
+        name: 'Treasurer',
+        desc: 'Hold 300 coins at once',
+      },
+      phoenix: {
+        name: 'Phoenix',
+        desc: 'Fall 10 times and rise again',
+      },
+      master: {
+        name: 'True Shinobi',
+        desc: 'Complete all four levels',
+      },
+    },
   },
 };
 

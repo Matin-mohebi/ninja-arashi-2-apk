@@ -8,6 +8,7 @@ export const LEVELS: LevelData[] = [
     titleEn: 'The Whispering Bamboo Forest',
     subtitleFa: 'فصل اول: راه شینوبی',
     subtitleEn: 'Act I: The Shinobi Path',
+    theme: 'bamboo',
     worldWidth: 3200,
     worldHeight: 900,
     spawnPoint: { x: 100, y: 650 },
@@ -210,6 +211,7 @@ export const LEVELS: LevelData[] = [
     titleEn: 'The Dungeon of Blades',
     subtitleFa: 'فصل دوم: آزمون فولاد',
     subtitleEn: 'Act II: Trial of Steel',
+    theme: 'dungeon',
     worldWidth: 3600,
     worldHeight: 950,
     spawnPoint: { x: 120, y: 700 },
@@ -450,6 +452,7 @@ export const LEVELS: LevelData[] = [
     titleEn: 'Blood Moon Citadel & Akumu',
     subtitleFa: 'فصل سوم: نبرد سرنوشت',
     subtitleEn: 'Act III: Battle of Destiny',
+    theme: 'citadel',
     worldWidth: 3200,
     worldHeight: 900,
     spawnPoint: { x: 100, y: 650 },
@@ -589,5 +592,224 @@ export const LEVELS: LevelData[] = [
       { id: 'chk3_boss', x: 1750, y: 690, activated: false },
     ],
     secretWalls: [],
+  },
+
+  // LEVEL 4: The Dawn Temple (v1.2.0) — non-boss gauntlet with a scroll-shrine finale
+  // Three sections: ascending spike-pit stairs -> void jump gauntlet -> guarded treasure hall.
+  {
+    id: 4,
+    titleFa: 'معبد سپیده',
+    titleEn: 'The Dawn Temple',
+    subtitleFa: 'فصل چهارم: طلوع سایه‌ها',
+    subtitleEn: 'Act IV: Dawn of Shadows',
+    theme: 'dawn',
+    worldWidth: 3400,
+    worldHeight: 900,
+    spawnPoint: { x: 100, y: 650 },
+    exitPortal: { x: 3300, y: 640, w: 70, h: 100 },
+    platforms: [
+      // --- Section A: ascending stairs with spike pits (0-1340) ---
+      { x: 0, y: 740, w: 320, h: 160, type: 'solid' }, // ground A
+      { x: 440, y: 660, w: 220, h: 160, type: 'solid' }, // step B (pit 320-440)
+      { x: 780, y: 580, w: 200, h: 160, type: 'solid' }, // step C (pit 660-780)
+      { x: 1100, y: 470, w: 240, h: 180, type: 'solid' }, // terrace D (gap 980-1100 = void)
+
+      // Small ledge above terrace D (scroll vantage)
+      { x: 1180, y: 320, w: 130, h: 20, type: 'bamboo' },
+
+      // --- Section B: floating-platform gauntlet over the void (1340-2400) ---
+      { x: 1400, y: 470, w: 110, h: 20, type: 'solid' },
+      { x: 1660, y: 430, w: 100, h: 20, type: 'solid' },
+      { x: 1900, y: 480, w: 100, h: 20, type: 'solid' },
+      { x: 2140, y: 400, w: 110, h: 20, type: 'solid' },
+      { x: 2290, y: 460, w: 110, h: 20, type: 'solid' },
+
+      // --- Section C: treasure hall (2400-3400) ---
+      { x: 2400, y: 740, w: 1000, h: 160, type: 'solid' }, // grand floor
+      // Sandstone pillars (wall-jumpable, hide the dart shooter)
+      { x: 2560, y: 480, w: 40, h: 260, type: 'solid' },
+      { x: 2820, y: 480, w: 40, h: 260, type: 'solid' },
+      // Treasure dais under the exit shrine
+      { x: 3140, y: 660, w: 180, h: 80, type: 'solid' },
+    ],
+    traps: [
+      // Spike pits inside the stair section
+      { id: 'sp4_1', type: 'spikes', x: 320, y: 770, w: 120, h: 40 },
+      { id: 'sp4_2', type: 'spikes', x: 660, y: 770, w: 120, h: 40 },
+      { id: 'sp4_3', type: 'spikes', x: 2660, y: 770, w: 130, h: 40 }, // hall floor trap between pillars
+      { id: 'sp4_4', type: 'spikes', x: 2920, y: 770, w: 100, h: 40 },
+
+      // Pendulum blades sweeping the void gauntlet
+      {
+        id: 'sw4_1',
+        type: 'swinging_blade',
+        x: 1780,
+        y: 410,
+        w: 55,
+        h: 55,
+        anchorX: 1780,
+        anchorY: 240,
+        length: 170,
+        angle: 0.6,
+        speed: 2.6,
+      },
+      {
+        id: 'sw4_2',
+        type: 'swinging_blade',
+        x: 2190,
+        y: 330,
+        w: 55,
+        h: 55,
+        anchorX: 2190,
+        anchorY: 170,
+        length: 160,
+        angle: -0.4,
+        speed: 2.9,
+      },
+
+      // Dart shooter embedded in the first treasure-hall pillar
+      {
+        id: 'dt4_1',
+        type: 'dart_shooter',
+        x: 2570,
+        y: 540,
+        w: 30,
+        h: 30,
+        direction: 'right',
+        cooldown: 2.2,
+        timer: 1.0,
+      },
+    ],
+    enemies: [
+      {
+        id: 'e4_1',
+        type: 'guard',
+        x: 820,
+        y: 530,
+        vx: 0,
+        vy: 0,
+        w: 36,
+        h: 55,
+        hp: 30,
+        maxHp: 30,
+        direction: -1,
+        patrolMinX: 790,
+        patrolMaxX: 960,
+        state: 'patrol',
+        attackTimer: 0,
+        attackCooldown: 1.3,
+        detectionRange: 200,
+        isGrounded: true,
+      },
+      {
+        id: 'e4_2',
+        type: 'archer',
+        x: 1200,
+        y: 420,
+        vx: 0,
+        vy: 0,
+        w: 36,
+        h: 55,
+        hp: 28,
+        maxHp: 28,
+        direction: 1,
+        patrolMinX: 1150,
+        patrolMaxX: 1300,
+        state: 'patrol',
+        attackTimer: 0,
+        attackCooldown: 2.0,
+        detectionRange: 360,
+        isGrounded: true,
+      },
+      {
+        id: 'e4_3',
+        type: 'hound',
+        x: 2520,
+        y: 695,
+        vx: 0,
+        vy: 0,
+        w: 48,
+        h: 40,
+        hp: 24,
+        maxHp: 24,
+        direction: 1,
+        patrolMinX: 2430,
+        patrolMaxX: 2640,
+        state: 'patrol',
+        attackTimer: 0,
+        attackCooldown: 1.0,
+        detectionRange: 260,
+        isGrounded: true,
+      },
+      {
+        id: 'e4_4',
+        type: 'guard',
+        x: 2880,
+        y: 690,
+        vx: 0,
+        vy: 0,
+        w: 36,
+        h: 55,
+        hp: 38,
+        maxHp: 38,
+        direction: -1,
+        patrolMinX: 2740,
+        patrolMaxX: 2980,
+        state: 'patrol',
+        attackTimer: 0,
+        attackCooldown: 1.2,
+        detectionRange: 210,
+        isGrounded: true,
+      },
+      {
+        id: 'e4_5',
+        type: 'spearman',
+        x: 3180,
+        y: 690,
+        vx: 0,
+        vy: 0,
+        w: 36,
+        h: 55,
+        hp: 45,
+        maxHp: 45,
+        direction: -1,
+        patrolMinX: 3050,
+        patrolMaxX: 3300,
+        state: 'patrol',
+        attackTimer: 0,
+        attackCooldown: 1.5,
+        detectionRange: 230,
+        isGrounded: true,
+      },
+    ],
+    collectibles: [
+      // Coins along the climb
+      { id: 'c4_1', type: 'coin', x: 180, y: 700, collected: false },
+      { id: 'c4_2', type: 'coin', x: 520, y: 620, collected: false },
+      { id: 'c4_3', type: 'coin', x: 860, y: 540, collected: false },
+      { id: 'c4_4', type: 'coin', x: 1180, y: 430, collected: false },
+      { id: 'c4_5', type: 'coin', x: 1450, y: 430, collected: false },
+      { id: 'c4_6', type: 'coin', x: 1940, y: 440, collected: false },
+      { id: 'c4_7', type: 'coin', x: 2480, y: 700, collected: false },
+      { id: 'c4_8', type: 'coin', x: 2760, y: 700, collected: false },
+      { id: 'c4_9', type: 'coin', x: 3180, y: 620, collected: false },
+
+      // 3 Ancient Scrolls (stairs vantage / void gauntlet / secret shrine)
+      { id: 'sc4_1', type: 'scroll', x: 1240, y: 280, collected: false },
+      { id: 'sc4_2', type: 'scroll', x: 2185, y: 350, collected: false },
+      { id: 'sc4_3', type: 'scroll', x: 3090, y: 690, collected: false }, // behind the secret wall
+
+      // Diamond + health
+      { id: 'd4_1', type: 'diamond', x: 2225, y: 340, collected: false },
+      { id: 'hp4_1', type: 'health_potion', x: 2450, y: 700, collected: false },
+    ],
+    checkpoints: [
+      { id: 'chk4_1', x: 1220, y: 420, activated: false }, // top of the stairs
+      { id: 'chk4_2', x: 2440, y: 690, activated: false }, // treasure hall entrance
+    ],
+    secretWalls: [
+      // Sandstone slab hiding the final scroll shrine
+      { id: 'swall4_1', x: 3000, y: 590, w: 30, h: 150, hp: 25, broken: false },
+    ],
   },
 ];

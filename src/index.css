@@ -61,4 +61,100 @@
   .safe-v {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  /* ---- v1.2.0 main menu animations (GPU-composited, no per-frame JS) ---- */
+
+  /* Ultra-slow artwork drift (feels like parallax without any scroll input) */
+  .na-menu-drift {
+    animation: na-drift 38s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  @keyframes na-drift {
+    from {
+      transform: scale(1.04) translate3d(-1.2%, 0.6%, 0);
+    }
+    to {
+      transform: scale(1.09) translate3d(1.2%, -0.8%, 0);
+    }
+  }
+
+  /* Drifting ember/light particles rising through the menu */
+  .na-menu-particle {
+    opacity: 0;
+    animation-name: na-particle;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  @keyframes na-particle {
+    0% {
+      transform: translate3d(0, 12vh, 0) scale(0.7);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.85;
+    }
+    50% {
+      transform: translate3d(2.5vw, -30vh, 0) scale(1);
+      opacity: 0.6;
+    }
+    88% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: translate3d(-1.5vw, -62vh, 0) scale(0.6);
+      opacity: 0;
+    }
+  }
+
+  /* Breathing glow behind the title */
+  .na-menu-glow {
+    animation: na-glow 5.5s ease-in-out infinite;
+  }
+
+  @keyframes na-glow {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.95;
+      transform: scale(1.12);
+    }
+  }
+
+  /* Soft neon text shadow pulse on the glowing title (used with bg-clip-text) */
+  .na-title-glow {
+    filter: drop-shadow(0 0 18px rgba(244, 63, 94, 0.35));
+    animation: na-title-pulse 4.2s ease-in-out infinite;
+  }
+
+  @keyframes na-title-pulse {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 14px rgba(244, 63, 94, 0.28));
+    }
+    50% {
+      filter: drop-shadow(0 0 26px rgba(244, 63, 94, 0.5));
+    }
+  }
+
+  /* Achievement toast entrance */
+  .na-toast {
+    animation: na-toast-in 0.25s ease-out both;
+  }
+
+  @keyframes na-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
 }

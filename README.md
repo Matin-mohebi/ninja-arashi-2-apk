@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🥷 Ninja Arashi 2: Shadow's Path
+# 🥷 NINJA
 
-**نینجا آراشی ۲: مسیر سایه‌ها**
+**نینجا**
 
 An intense dark-silhouette ninja action platformer — packaged as a native Android APK.
 
@@ -14,7 +14,7 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 ![Engine](https://img.shields.io/badge/render-Canvas%202D%20%2B%20React%2019-red)
 ![Wrapper](https://img.shields.io/badge/wrapper-Capacitor%207-blue)
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-orange)
-![Size](https://img.shields.io/badge/APK-~21%20MB-yellow)
+![Size](https://img.shields.io/badge/APK-~32%20MB-yellow)
 
 </div>
 
@@ -35,7 +35,7 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 ## 📖 درباره بازی | About
 
 **فارسی:**
-نبرد شینوبی در دنیای تاریکی و شمشیر! یک پلتفرمر اکشن با سبک ظاهری «سایه‌ها» (dark silhouette) الهام‌گرفته از Ninja Arashi 2، شامل مبارزه با کاتانا، پرتاب شوریکن، دَش سایه، جادوی مبدل (Kawarimi)، تله‌های مرگبار و باس‌فایت. بازی کاملاً **آفلاین** است و رابط کاربری فارسی/انگلیسی دارد.
+نبرد شینوبی در دنیای تاریکی و شمشیر! یک پلتفرمر اکشن با سبک ظاهری «سایه‌ها» (dark silhouette)، شامل مبارزه با کاتانا، پرتاب شوریکن، دَش سایه، جادوی مبدل (Kawarimi)، تله‌های مرگبار و باس‌فایت. بازی کاملاً **آفلاین** است و رابط کاربری فارسی/انگلیسی دارد.
 
 **English:**
 A side-scrolling action platformer featuring katana combat, shuriken throws, phantom dash, disguise ninjutsu, deadly traps, and boss battles across 3 levels with a persistent upgrade system (Dojo). 100% offline — no network permission required at runtime beyond the WebView engine.
@@ -43,11 +43,13 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 ## ✨ ویژگی‌ها | Features
 
 - ⚔️ **Combat:** katana slash combos, shurikens with recharge, phantom dash (i-frames), disguise ninjutsu
-- 🏯 **3 handcrafted levels** + boss fight, checkpoints, secret scrolls (3 per level), coins & diamonds
+- 🏯 **4 handcrafted levels** + boss fight, checkpoints, secret scrolls (3 per level), coins & diamonds
 - 🛡️ **Dojo upgrade system** (health, katana, shuriken, dash, disguise) persisted via `localStorage`
+- 👘 **7 skins** with unlock thresholds and unique trail particles (آراشی، شبح سرخ، رونین، زرین، یخ، اخگر، سایهٔ بنفش)
+- 🎵 **Real soundtrack:** 8 synthesized OGG Vorbis tracks (Persian/Hijaz-flavored) with gapless loops, crossfade + per-level themes
 - 🌐 **Bilingual UI:** Persian (default) / English, RTL-aware
-- 🎵 **Procedural audio:** all SFX/music synthesized with Web Audio API — zero audio files
-- 🌸 Parallax bamboo forest, sakura petals, dynamic lighting, camera shake & juice
+- 🏅 **Stats & 10 achievements** with toast unlocks, best times, lifetime stats
+- 🌸 Themed parallax skies, weather particles (fireflies/snow/embers/petals), screen shake, hit-stop & dash ghosts
 
 ## 📱 بهینه‌سازی موبایل | Mobile Optimizations
 
@@ -64,6 +66,20 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 | 🔄 Rotate Hint | در وب، اگر گوشی عمودی باشد راهنمای «گوشی را بچرخانید» نشان داده می‌شود |
 | 📐 Dynamic Viewport | چیدمان با `100dvh` — بدون جاافتادن پشت نوار مرورگر موبایل |
 | ⏸️ Auto-Pause | رفتن به پس‌زمینه = توقف خودکار بازی و موزیک |
+
+## 🚀 تغییرات v1.2.0 | What's New
+
+- 🎵 **موسیقی واقعی بازی** — ۸ قطعه OGG سنتزشده با گام فارسی/حجاز (D Hijaz): منو، ۴ مرحله، باس، پیروزی و باخت؛ لوپ بی‌درز، کراس‌فید ۰.۸ ثانیه‌ای، پیش‌بارگذاری تنبل هر مرحله و توقف/ادامه هوشمند
+- 🏯 **مرحله ۴: «معبد سپیده»** — سه بخش تازه: پله‌های صعودی با چاله‌های خاردار، گانتلت پرش روی سکوهای شناور بر خلا، و تال گنج محافظت‌شده با طومار مخفی نهایی
+- 🌅 **پالت سپیده‌دم** — آسمان طلایی/صورتی/بنفش، سکوهای ماسه‌سنگ، ستون‌های معبد و گلبرگ‌های نور
+- 🌤️ **آسمان و پارالاکس تم‌محور** — گرادیان آسمان اختصاصی هر مرحله + ۲ لایه سیلوئت متحرک (کوه/بامبو/ستون/پاگودا) با ضریب ۰.۲× و ۰.۴× دوربین
+- 🌸 **ذرات هوا‌شناسی هر مرحله** — کرم شب‌تاب و غبار (مرحله ۱)، برف (مرحله ۲)، جرقه‌های بالارونده (مرحله ۳)، گلبرگ (مرحله ۴) — سقف ۴۰ ذره و غیرفعال در حالت کم‌ذره
+- 👘 **۳ اسکین جدید** — «یخ» (آبی یخی، رد بلور)، «اخگر» (نارنجی، جرقه آتش)، «سایهٔ بنفش» (بنفش عمیق، مه بنفش) با آستانه‌های باز شدن سکه/طومار
+- 🏠 **منوی اصلی متحرک** — پس‌زمینه پارالاکس + ذرات شناور + عنوان درخشان؛ منوی توقف دکمه «بازگشت به منو» و «تنظیمات» گرفت
+- 🏅 **آمار و دستاوردها** — بهترین زمان هر مرحله، مجموع مرگ‌ها، سکه‌های عمر، پرش‌ها، زمان بازی + ۱۰ دستاورد با توست باز شدن و وضعیت قفل/باز در مودال آمار
+- ⚙️ **تنظیمات جدید** — بلندی موسیقی و جلوه‌های صوتی، لرزش صفحه، حالت کم‌ذره، زبان — ذخیره و اعمال فوری
+- 💥 **آب‌وهوای بازی (Juice)** — لرزش صفحه هنگام آسیب و کوبش باس (قابل خاموش‌کردن)، توقف لحظه‌ای (hit-stop) هنگام کشتن دشمن، شبح‌های رد دش با رنگ اسکین، گردوخاک فرود
+- 🔒 سازگار با سیوهای قدیمی — شکل شیء ذخیره تغییر نکرده؛ آمار و دستاوردها در کلید جداگانه merge-safe ذخیره می‌شوند
 
 ## 🩹 تغییرات v1.1.0 | What's Fixed
 
@@ -123,7 +139,7 @@ Artifact ها ۹۰ روز قابل دانلود هستند.
 
 ## 📄 License
 
-Game code: MIT — art assets: project-internal. "Ninja Arashi" is a trademark of its respective owner; this is a fan-inspired original implementation.
+Game code: MIT — art assets: project-internal. An original implementation — not affiliated with any existing game or brand.
 
 ---
 

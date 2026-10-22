@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, RotateCcw, Home, Volume2, VolumeX, Shield } from 'lucide-react';
+import { Play, RotateCcw, Home, Volume2, VolumeX, Shield, Settings } from 'lucide-react';
 import { Language } from '../types/game';
 import { getTranslation } from '../utils/translations';
 import { sounds } from '../audio/soundManager';
@@ -10,6 +10,7 @@ interface PauseModalProps {
   onResume: () => void;
   onRestart: () => void;
   onDojo: () => void;
+  onSettings: () => void;
   onHome: () => void;
   onToggleMute: () => void;
 }
@@ -20,6 +21,7 @@ export const PauseModal: React.FC<PauseModalProps> = ({
   onResume,
   onRestart,
   onDojo,
+  onSettings,
   onHome,
   onToggleMute,
 }) => {
@@ -59,16 +61,29 @@ export const PauseModal: React.FC<PauseModalProps> = ({
             <span>{trans.restart}</span>
           </button>
 
-          <button
-            onClick={() => {
-              sounds.playCoin();
-              onDojo();
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-amber-300 text-xs font-semibold transition-colors"
-          >
-            <Shield className="w-4 h-4" />
-            <span>{trans.dojo}</span>
-          </button>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              onClick={() => {
+                sounds.playCoin();
+                onDojo();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-amber-300 text-xs font-semibold transition-colors"
+            >
+              <Shield className="w-4 h-4" />
+              <span className="truncate">{trans.characters}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                sounds.playCoin();
+                onSettings();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-sky-300 text-xs font-semibold transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="truncate">{trans.settingsTitle}</span>
+            </button>
+          </div>
 
           <button
             onClick={onToggleMute}
@@ -86,7 +101,7 @@ export const PauseModal: React.FC<PauseModalProps> = ({
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-900/50 hover:bg-zinc-800 text-zinc-400 text-xs font-medium transition-colors"
           >
             <Home className="w-3.5 h-3.5" />
-            <span>{trans.mainMenu}</span>
+            <span>{trans.backToMenu}</span>
           </button>
         </div>
       </div>

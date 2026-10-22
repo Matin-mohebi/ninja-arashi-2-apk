@@ -13,7 +13,8 @@ import {
 import { LEVELS } from './levels/levelsData';
 import { NinjaEngine } from './engine/NinjaEngine';
 import { sounds } from './audio/soundManager';
-import { TitleScreen } from './components/TitleScreen';
+import { music, MusicTrack } from './audio/music';
+import { MainMenu } from './components/MainMenu';
 import { LevelSelect } from './components/LevelSelect';
 import { HUD } from './components/HUD';
 import { VirtualControls } from './components/VirtualControls';
@@ -22,6 +23,16 @@ import { HowToPlayModal } from './components/HowToPlayModal';
 import { VictoryModal } from './components/VictoryModal';
 import { GameOverModal } from './components/GameOverModal';
 import { PauseModal } from './components/PauseModal';
+import { SettingsModal, GameSettings, loadSettings } from './components/SettingsModal';
+import { StatsModal } from './components/StatsModal';
+import { getTranslation } from './utils/translations';
+import {
+  MetaProgress,
+  loadMeta,
+  saveMeta,
+  evaluateAchievements,
+  AchievementCtx,
+} from './utils/achievements';
 import {
   initAndroidBackButton,
   exitApp,
@@ -33,7 +44,6 @@ import {
 
 // Generated cinematic background images
 import titleBg from './assets/images/ninja_arashi_title_bg_1792666724099.jpg';
-import forestBg from './assets/images/ninja_forest_bamboo_bg_1792666738901.jpg';
 import dojoBg from './assets/images/ninja_dojo_shrine_bg_1792666739047.jpg';
 
 const STORAGE_KEY = 'ninja_arashi_2_save_v1';
@@ -62,15 +72,26 @@ const INITIAL_STATS: PlayerStats = {
   },
 };
 
+/** Lightweight achievement toast model. */
+interface Toast {
+  id: number;
+  title: string;
+  desc: string;
+}
+
 export default function App() {
   const [gameState, setGameState] = useState<GameState>('TITLE_MENU');
-  const [lang, setLang] = useState<Language>('fa'); // Persian default per user prompt
+  const [settings, setSettings] = useState<GameSettings>(() => loadSettings());
+  const lang = settings.lang;
   const [currentLevelId, setCurrentLevelId] = useState<number>(1);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [showHowToPlay, setShowHowToPlay] = useState<boolean>(false);
   const [showDojo, setShowDojo] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showStats, setShowStats] = useState<boolean>(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Player Stats with local storage
+  // Player Stats with local storage (merge-safe with old saves)
   const [stats, setStats] = useState<PlayerStats>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -80,6 +101,15 @@ export default function App() {
     }
     return INITIAL_STATS;
   });
+
+  // Lifetime meta progress (v1.2.0, own key — never collides with the save)
+  const [meta, setMeta] = useState<MetaProgress>(() => loadMeta());
+  const metaRef = useRef<MetaProgress>(meta);
+  metaRef.current = meta;
+  const statsRef = useRef<PlayerStats>(stats);
+  statsRef.current = stats;
+  const langRef = useRef<Language>(lang);
+  langRef.current = lang;
 
   // Active HUD state (synchronized with 60FPS engine)
   const [hudHp, setHudHp] = useState<number>(stats.hp);
@@ -111,6 +141,17 @@ export default function App() {
   gameStateRef.current = gameState;
   const mutedRef = useRef<boolean>(isMuted);
   mutedRef.current = isMuted;
+  const settingsRef = useRef<GameSettings>(settings);
+  settingsRef.current = settings;
+  /** Live-applied engine presentation switches (mutated in place). */
+  const visualSettingsRef = useRef({ shake: true, reducedParticles: false });
+  visualSettingsRef.current = { shake: settings.shake, reducedParticles: settings.reducedParticles };
+  /** Deaths accumulated during the current run (for the flawless achievement). */
+  const deathsThisRunRef = useRef<number>(0);
+  /** Last absolute coin/scroll counts, for lifetime deltas. */
+  const lastCoinsRef = useRef<number>(stats.coins);
+  const lastScrollsRef = useRef<number>(0);
+  const toastIdRef = useRef<number>(1);
 
   // Canvas & Engine refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -126,6 +167,48 @@ export default function App() {
       // Storage quota or error
     }
   }, [stats]);
+
+  // Persist + apply settings immediately (volumes, shake, particles, language)
+  useEffect(() => {
+    try {
+      localStorage.setItem('ninja_arashi_2_settings_v1', JSON.stringify(settings));
+    } catch {
+      // ignore
+    }
+    sounds.setSfxVolume(settings.sfxVolume);
+    music.setVolume(settings.musicVolume);
+  }, [settings]);
+
+  /** Push a toast (achievement unlock etc.) — auto-dismisses after 3.2s. */
+  const pushToast = useCallback((title: string, desc: string) => {
+    const id = toastIdRef.current++;
+    setToasts((prev) => [...prev.slice(-2), { id, title, desc }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+  }, []);
+
+  /** Persist meta and refresh the mirror state. */
+  const flushMeta = useCallback(() => {
+    saveMeta(metaRef.current);
+    setMeta({ ...metaRef.current, bestTimes: { ...metaRef.current.bestTimes }, achievements: [...metaRef.current.achievements] });
+  }, []);
+
+  /** Evaluate achievements against current meta/stats; toast + persist unlocks. */
+  const checkAchievements = useCallback(
+    (ctx: AchievementCtx = {}) => {
+      const unlockedIds = evaluateAchievements(metaRef.current, statsRef.current, ctx);
+      if (unlockedIds.length === 0) return;
+      const trans = getTranslation(langRef.current);
+      metaRef.current.achievements = [...metaRef.current.achievements, ...unlockedIds];
+      for (const id of unlockedIds) {
+        const a = trans.achievements[id];
+        pushToast(a.name, a.desc);
+      }
+      flushMeta();
+    },
+    [pushToast, flushMeta]
+  );
 
   const currentLevel: LevelData = LEVELS.find((l) => l.id === currentLevelId) || LEVELS[0];
 
@@ -148,6 +231,12 @@ export default function App() {
       setCoins(stats.coins);
       setDiamonds(stats.diamonds);
 
+      // Run-scoped trackers
+      deathsThisRunRef.current = 0;
+      lastCoinsRef.current = stats.coins;
+      lastScrollsRef.current = 0;
+
+      // Boss bar only for the level-3 Akumu fight (level 4 is a non-boss gauntlet)
       if (level.id === 3) {
         setBossHp({ current: 200, max: 200 });
       } else {
@@ -176,6 +265,16 @@ export default function App() {
             setDisguisePct(pct);
           },
           onCollect: (newCoins, newDiamonds, newScrolls) => {
+            // Lifetime deltas for meta achievements
+            if (newCoins > lastCoinsRef.current) {
+              metaRef.current.lifetimeCoins += newCoins - lastCoinsRef.current;
+            }
+            if (newScrolls > lastScrollsRef.current) {
+              metaRef.current.lifetimeScrolls += newScrolls - lastScrollsRef.current;
+            }
+            lastCoinsRef.current = newCoins;
+            lastScrollsRef.current = newScrolls;
+
             setCoins(newCoins);
             setDiamonds(newDiamonds);
             setScrolls(newScrolls);
@@ -184,12 +283,27 @@ export default function App() {
               coins: newCoins,
               diamonds: newDiamonds,
             }));
+            checkAchievements();
           },
           onBossHpChange: (hp, max) => {
             setBossHp({ current: hp, max });
           },
           onCheckpoint: (spawn) => {
             checkpointsRef.current[level.id] = spawn;
+          },
+          onJump: () => {
+            metaRef.current.totalJumps += 1;
+            checkAchievements();
+          },
+          onKill: () => {
+            metaRef.current.totalKills += 1;
+            checkAchievements();
+          },
+          onDeath: () => {
+            metaRef.current.totalDeaths += 1;
+            deathsThisRunRef.current += 1;
+            checkAchievements();
+            flushMeta();
           },
           onLevelComplete: (runSummary) => {
             setVictoryStats(runSummary);
@@ -209,20 +323,29 @@ export default function App() {
               };
             });
 
+            // Best-time record + playtime bookkeeping
+            const prevBest = metaRef.current.bestTimes[level.id];
+            if (!prevBest || runSummary.time < prevBest) {
+              metaRef.current.bestTimes[level.id] = runSummary.time;
+            }
+            flushMeta();
+            checkAchievements({ lastRunDeaths: deathsThisRunRef.current });
+
             setGameState('ROUND_SUMMARY');
           },
           onGameOver: () => {
             setGameState('GAME_OVER');
           },
         },
-        forestBg,
-        savedCheckpoint
+        undefined, // procedural themed backgrounds replace the old JPEG backdrop
+        savedCheckpoint,
+        visualSettingsRef.current
       );
 
       engineRef.current = engine;
       engine.start();
     },
-    [stats]
+    [stats, checkAchievements, flushMeta]
   );
 
   // Resize / orientation listener (HiDPI aware, handled by engine)
@@ -273,9 +396,8 @@ export default function App() {
     };
   }, []);
 
-  // Auto-pause when the tab/app goes to the background (mobile browsers keep
-  // the JS interval-based ambient music alive and returning mid-jump causes
-  // unfair deaths). Music is stopped too and resumed on return.
+  // Auto-pause when the tab/app goes to the background (returning mid-jump
+  // causes unfair deaths). Music suspends/resumes itself via music.ts.
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) {
@@ -283,20 +405,25 @@ export default function App() {
           setGameState('PAUSED');
           engineRef.current?.stop();
         }
-        sounds.stopAmbientMusic();
-      } else {
-        sounds.setMuted(mutedRef.current); // restarts ambient music if unmuted
+        flushMeta();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
+  }, [flushMeta]);
 
-  // Ambient music unlock: Web Audio requires a user gesture to start (iOS
-  // Safari especially). Previously the ambient music NEVER started because
-  // nothing called setMuted/startAmbientMusic on load.
+  // Audio unlock: Web Audio requires a user gesture to start (iOS Safari
+  // especially). The FIRST pointerdown/keydown/touchstart boots both the SFX
+  // context and the MusicEngine (which then plays the desired menu/level
+  // track with a proper crossfade).
   useEffect(() => {
-    const kick = () => sounds.setMuted(mutedRef.current);
+    const kick = () => {
+      sounds.setMuted(mutedRef.current);
+      sounds.setSfxVolume(settingsRef.current.sfxVolume);
+      music.setVolume(settingsRef.current.musicVolume);
+      music.setMuted(mutedRef.current);
+      music.unlock();
+    };
     window.addEventListener('pointerdown', kick, { once: true });
     window.addEventListener('keydown', kick, { once: true });
     window.addEventListener('touchstart', kick, { once: true });
@@ -307,17 +434,55 @@ export default function App() {
     };
   }, []);
 
+  // Music follows the game state with lazy per-level preloads and crossfades
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      music.resume();
+      music.play(`level${currentLevelId}` as MusicTrack);
+    } else if (gameState === 'ROUND_SUMMARY') {
+      music.play('victory', false); // one-shot sting
+    } else if (gameState === 'GAME_OVER') {
+      music.play('gameover', false); // somber sting
+    } else if (gameState === 'PAUSED') {
+      music.pause(); // suspends ctx mid-track; resumes on PLAYING
+    } else {
+      // Menus / summaries
+      music.resume();
+      music.play('menu');
+    }
+  }, [gameState, currentLevelId]);
+
+  // Playtime accumulator: ticks while playing, persists on state change
+  useEffect(() => {
+    if (gameState !== 'PLAYING') return;
+    const iv = setInterval(() => {
+      metaRef.current.playtime += 5;
+    }, 5000);
+    return () => {
+      clearInterval(iv);
+      flushMeta();
+    };
+  }, [gameState, flushMeta]);
+
   useEffect(() => {
     let lastBack = 0;
     let toastTimer: ReturnType<typeof setTimeout>;
     const onAndroidBack = () => {
-      // 1. Close any open modal first (Dojo / How-to-play)
+      // 1. Close any open modal first (Dojo / How-to-play / Settings / Stats)
       if (showDojo) {
         setShowDojo(false);
         return;
       }
       if (showHowToPlay) {
         setShowHowToPlay(false);
+        return;
+      }
+      if (showSettings) {
+        setShowSettings(false);
+        return;
+      }
+      if (showStats) {
+        setShowStats(false);
         return;
       }
       // 2. In-game: pause.  Paused: resume (symmetric with the Escape key).
@@ -347,7 +512,7 @@ export default function App() {
       window.removeEventListener('android-back', onAndroidBack);
       clearTimeout(toastTimer);
     };
-  }, [gameState, showDojo, showHowToPlay]);
+  }, [gameState, showDojo, showHowToPlay, showSettings, showStats]);
 
   // Keyboard controls listener
   useEffect(() => {
@@ -434,27 +599,48 @@ export default function App() {
     }
   };
 
+  /** Stop the level and land on the animated main menu. */
+  const goHome = () => {
+    engineRef.current?.stop();
+    flushMeta();
+    setGameState('TITLE_MENU');
+  };
+
+  /** "شروع بازی": continue from the first uncompleted level (or L1). */
+  const startCampaign = () => {
+    const next = LEVELS.find((l) => !stats.levelsCompleted.includes(l.id));
+    startLevel(next ? next.id : 1);
+  };
+
   const toggleMute = () => {
     const newMuted = !isMuted;
     setIsMuted(newMuted);
     sounds.setMuted(newMuted);
+    music.setMuted(newMuted);
   };
 
   const toggleLang = () => {
-    setLang((prev) => (prev === 'fa' ? 'en' : 'fa'));
+    setSettings((prev) => ({ ...prev, lang: prev.lang === 'fa' ? 'en' : 'fa' }));
+  };
+
+  const patchSettings = (patch: Partial<GameSettings>) => {
+    setSettings((prev) => ({ ...prev, ...patch }));
   };
 
   return (
     <div className="relative app-shell bg-black overflow-hidden font-sans select-none">
-      {/* 1. Title Screen */}
+      {/* 1. Main Menu (animated, v1.2.0) */}
       {gameState === 'TITLE_MENU' && (
-        <TitleScreen
+        <MainMenu
           lang={lang}
           isMuted={isMuted}
-          onPlay={() => startLevel(1)}
+          stats={stats}
+          onPlay={startCampaign}
           onOpenLevelSelect={() => setGameState('LEVEL_SELECT')}
           onOpenDojo={() => setShowDojo(true)}
           onOpenHowToPlay={() => setShowHowToPlay(true)}
+          onOpenStats={() => setShowStats(true)}
+          onOpenSettings={() => setShowSettings(true)}
           onToggleMute={toggleMute}
           onToggleLang={toggleLang}
           bgUrl={titleBg}
@@ -537,10 +723,8 @@ export default function App() {
           }}
           onRestart={restartLevel}
           onDojo={() => setShowDojo(true)}
-          onHome={() => {
-            engineRef.current?.stop();
-            setGameState('TITLE_MENU');
-          }}
+          onSettings={() => setShowSettings(true)}
+          onHome={goHome}
           onToggleMute={toggleMute}
         />
       )}
@@ -554,7 +738,7 @@ export default function App() {
           lang={lang}
           onNextLevel={handleNextLevel}
           onRestart={restartLevel}
-          onHome={() => setGameState('TITLE_MENU')}
+          onHome={goHome}
           hasNextLevel={currentLevelId < LEVELS.length}
         />
       )}
@@ -565,11 +749,11 @@ export default function App() {
           lang={lang}
           onRestart={restartLevel}
           onDojo={() => setShowDojo(true)}
-          onHome={() => setGameState('TITLE_MENU')}
+          onHome={goHome}
         />
       )}
 
-      {/* 8. Dojo Sanctuary Modal */}
+      {/* 8. Dojo Sanctuary Modal (شخصیت‌ها) */}
       {showDojo && (
         <DojoModal
           stats={stats}
@@ -592,7 +776,44 @@ export default function App() {
         />
       )}
 
-      {/* 10. Rotate-device hint (portrait touch devices; native app locks landscape) */}
+      {/* 10. Settings Modal */}
+      {showSettings && (
+        <SettingsModal
+          settings={settings}
+          lang={lang}
+          onChange={patchSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {/* 11. Stats & Achievements Modal */}
+      {showStats && (
+        <StatsModal
+          meta={meta}
+          stats={stats}
+          levels={LEVELS}
+          lang={lang}
+          onClose={() => setShowStats(false)}
+        />
+      )}
+
+      {/* 12. Achievement toasts */}
+      <div className="fixed bottom-20 right-3 sm:right-5 z-[90] flex flex-col gap-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="na-toast flex items-start gap-2.5 max-w-[240px] px-3.5 py-2.5 rounded-xl bg-zinc-900/95 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.25)]"
+          >
+            <span className="mt-0.5 text-amber-400">🏆</span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-300 truncate">{t.title}</p>
+              <p className="text-[10px] text-zinc-400 leading-snug">{t.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 13. Rotate-device hint (portrait touch devices; native app locks landscape) */}
       {!isNativeApp() && showRotateHint && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center gap-6 p-8 text-center">
           <div className="w-20 h-32 rounded-2xl border-4 border-zinc-600 relative animate-pulse">
@@ -609,7 +830,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 11. Android double-back-to-exit toast */}
+      {/* 14. Android double-back-to-exit toast */}
       {showExitToast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[110] bg-zinc-900/95 border border-zinc-700 text-zinc-200 text-sm px-5 py-2.5 rounded-full shadow-2xl pointer-events-none">
           {lang === 'fa' ? 'برای خروج دوباره لمس کنید' : 'Tap back again to exit'}

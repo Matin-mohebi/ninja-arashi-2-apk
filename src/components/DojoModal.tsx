@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { X, Sword, Sparkles, Zap, Shield, Heart, Coins, ArrowUpRight, Check } from 'lucide-react';
 import { PlayerSkin, PlayerStats, Language } from '../types/game';
 import { getTranslation } from '../utils/translations';
+import { SKINS, SKIN_ORDER, qualifiedSkins } from '../utils/skins';
+import { S } from '../utils/format';
 import { sounds } from '../audio/soundManager';
 
 interface DojoModalProps {
@@ -11,6 +13,35 @@ interface DojoModalProps {
   onClose: () => void;
   dojoBgUrl?: string;
 }
+
+/** Per-skin flavor text + card theming (keys mirror PlayerSkin). */
+const SKIN_DESC_FA: Record<PlayerSkin, string> = {
+  arashi: 'شینوبی افسانه‌ای با چشمان آبی و شال سرخ',
+  crimson: 'فرمانده سایه‌های سرخ با شمشیر خونین',
+  ghost: 'روح انتقام‌جوی رونین با چشمان نقره‌ای',
+  golden: 'استاد باستانی با هاله زرین خورشید',
+  frost: 'شینوبی یخی با رد بلورهای سرد',
+  ember: 'شعلهٔ کوه آتشین با جرقه‌های آتش',
+  void: 'سایهٔ بنفش مه‌آلود از دنیای دیگر',
+};
+const SKIN_DESC_EN: Record<PlayerSkin, string> = {
+  arashi: 'Legendary shadow shinobi with cyan gaze',
+  crimson: 'Scarlet phantom bathed in the blood moon',
+  ghost: 'Vengeful ronin spirit walking between realms',
+  golden: 'Ancient clan master blessed by solar embers',
+  frost: 'Glacial shinobi trailing cold crystal shards',
+  ember: 'Living flame leaving fire sparks behind',
+  void: 'Violet wraith bleeding mist from the void',
+};
+const SKIN_COLOR: Record<PlayerSkin, { colorClass: string }> = {
+  arashi: { colorClass: 'border-cyan-500/50 bg-cyan-950/20' },
+  crimson: { colorClass: 'border-rose-500/50 bg-rose-950/20' },
+  ghost: { colorClass: 'border-slate-400/50 bg-slate-900/30' },
+  golden: { colorClass: 'border-amber-400/50 bg-amber-950/20' },
+  frost: { colorClass: 'border-sky-300/50 bg-sky-950/30' },
+  ember: { colorClass: 'border-orange-500/50 bg-orange-950/20' },
+  void: { colorClass: 'border-purple-500/50 bg-purple-950/30' },
+};
 
 export const DojoModal: React.FC<DojoModalProps> = ({
   stats,
@@ -42,10 +73,7 @@ export const DojoModal: React.FC<DojoModalProps> = ({
   // Promote any newly-qualified skin into the persistent unlock list.
   // (Self-terminating: after the update, `missing` is empty so no loop.)
   useEffect(() => {
-    const qualified: PlayerSkin[] = ['arashi'];
-    if (stats.coins >= 80 || totalScrolls >= 2) qualified.push('crimson');
-    if (stats.coins >= 180 || totalScrolls >= 4) qualified.push('ghost');
-    if (stats.coins >= 300 || totalScrolls >= 6) qualified.push('golden');
+    const qualified = qualifiedSkins(stats.coins, totalScrolls);
     const missing = qualified.filter((s) => !unlockedSkins.includes(s));
     if (missing.length > 0) {
       onUpdateStats({ ...stats, unlockedSkins: [...unlockedSkins, ...missing] });
@@ -247,60 +275,28 @@ export const DojoModal: React.FC<DojoModalProps> = ({
 
           {activeTab === 'skins' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Arashi */}
-              <SkinCard
-                id="arashi"
-                name={trans.skinArashi}
-                desc={isRtl ? 'شینوبی افسانه‌ای با چشمان آبی و شال سرخ' : 'Legendary shadow shinobi with cyan gaze'}
-                colorClass="border-cyan-500/50 bg-cyan-950/20"
-                glowColor="#38bdf8"
-                isEquipped={stats.skin === 'arashi'}
-                isUnlocked={true}
-                onEquip={() => equipSkin('arashi')}
-                trans={trans}
-              />
-
-              {/* Crimson Ghost */}
-              <SkinCard
-                id="crimson"
-                name={trans.skinCrimson}
-                desc={isRtl ? 'فرمانده سایه‌های سرخ با شمشیر خونین' : 'Scarlet phantom bathed in the blood moon'}
-                colorClass="border-rose-500/50 bg-rose-950/20"
-                glowColor="#f43f5e"
-                isEquipped={stats.skin === 'crimson'}
-                isUnlocked={unlockedSkins.includes('crimson')}
-                unlockText={isRtl ? '۸۰ سکه یا ۲ طومار' : '80 Coins or 2 Scrolls'}
-                onEquip={() => equipSkin('crimson')}
-                trans={trans}
-              />
-
-              {/* Silver Ghost Ronin */}
-              <SkinCard
-                id="ghost"
-                name={trans.skinGhost}
-                desc={isRtl ? 'روح انتقام‌جوی رونین با چشمان نقره‌ای' : 'Vengeful ronin spirit walking between realms'}
-                colorClass="border-slate-400/50 bg-slate-900/30"
-                glowColor="#e2e8f0"
-                isEquipped={stats.skin === 'ghost'}
-                isUnlocked={unlockedSkins.includes('ghost')}
-                unlockText={isRtl ? '۱۸۰ سکه یا ۴ طومار' : '180 Coins or 4 Scrolls'}
-                onEquip={() => equipSkin('ghost')}
-                trans={trans}
-              />
-
-              {/* Golden Shinobi */}
-              <SkinCard
-                id="golden"
-                name={trans.skinGolden}
-                desc={isRtl ? 'استاد باستانی با هاله زرین خورشید' : 'Ancient clan master blessed by solar embers'}
-                colorClass="border-amber-400/50 bg-amber-950/20"
-                glowColor="#fbbf24"
-                isEquipped={stats.skin === 'golden'}
-                isUnlocked={unlockedSkins.includes('golden')}
-                unlockText={isRtl ? '۳۰۰ سکه یا ۶ طومار' : '300 Coins or 6 Scrolls'}
-                onEquip={() => equipSkin('golden')}
-                trans={trans}
-              />
+              {SKIN_ORDER.map((skinId) => {
+                const def = SKINS[skinId];
+                return (
+                  <SkinCard
+                    key={skinId}
+                    id={skinId}
+                    name={trans[`skin${skinId.charAt(0).toUpperCase()}${skinId.slice(1)}` as keyof typeof trans] as string}
+                    desc={isRtl ? SKIN_DESC_FA[skinId] : SKIN_DESC_EN[skinId]}
+                    colorClass={SKIN_COLOR[skinId].colorClass}
+                    glowColor={def.eye}
+                    isEquipped={stats.skin === skinId}
+                    isUnlocked={unlockedSkins.includes(skinId)}
+                    unlockText={
+                      def.minCoins > 0
+                        ? `${S.d(def.minCoins, lang)} ${isRtl ? 'سکه' : 'Coins'} ${isRtl ? 'یا' : 'or'} ${S.d(def.minScrolls, lang)} ${isRtl ? 'طومار' : 'Scrolls'}`
+                        : undefined
+                    }
+                    onEquip={() => equipSkin(skinId)}
+                    trans={trans}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
