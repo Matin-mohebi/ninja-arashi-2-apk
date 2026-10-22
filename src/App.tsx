@@ -27,6 +27,7 @@ import {
   exitApp,
   preventTouchChrome,
   shouldShowRotateHint,
+  watchOrientation,
   isNativeApp,
 } from './utils/mobile';
 
@@ -100,7 +101,7 @@ export default function App() {
   const [coinsEarnedInRun, setCoinsEarnedInRun] = useState<number>(0);
 
   // Rotate-device hint (touch devices held in portrait)
-  const [showRotateHint, setShowRotateHint] = useState<boolean>(shouldShowRotateHint());
+  const [showRotateHint, setShowRotateHint] = useState<boolean>(() => shouldShowRotateHint());
   // Double-back-to-exit toast on Android
   const [showExitToast, setShowExitToast] = useState<boolean>(false);
 
@@ -208,16 +209,35 @@ export default function App() {
   );
 
   // Resize / orientation listener (HiDPI aware, handled by engine)
+  // Robustness notes:
+  // - `orientationchange` fires BEFORE the viewport/layout settles on some
+  //   browsers (esp. iOS Safari) — so we re-apply once more after a delay.
+  // - The matchMedia "change" event is the source of truth for actual flips.
+  // - visualViewport resize covers URL-bar show/hide and iOS quirks.
   useEffect(() => {
-    const handleResize = () => {
+    let delayed: ReturnType<typeof setTimeout> | undefined;
+    const apply = () => {
       engineRef.current?.handleResize();
       setShowRotateHint(shouldShowRotateHint());
     };
+    const handleResize = () => apply();
+    const handleOrientation = () => {
+      apply();
+      clearTimeout(delayed);
+      delayed = setTimeout(apply, 350);
+    };
     window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
+    window.addEventListener('orientationchange', handleOrientation);
+    const cleanupWatch = watchOrientation(handleOrientation);
+    const vv = window.visualViewport;
+    const handleVv = () => apply();
+    vv?.addEventListener('resize', handleVv);
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
+      window.removeEventListener('orientationchange', handleOrientation);
+      vv?.removeEventListener('resize', handleVv);
+      clearTimeout(delayed);
+      cleanupWatch();
     };
   }, []);
 

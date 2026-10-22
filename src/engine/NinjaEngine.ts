@@ -125,6 +125,12 @@ export class NinjaEngine {
       this.camera.y = clampY;
       this.camera.targetX = clampX;
       this.camera.targetY = clampY;
+      // Resizing the backing store clears the canvas. While the loop is paused
+      // (PAUSED / ROUND_SUMMARY / GAME_OVER) no frame would repaint it, leaving
+      // a blank/black screen after a device rotation — draw one frame now.
+      if (!this.isRunning) {
+        this.render();
+      }
     }
   }
 

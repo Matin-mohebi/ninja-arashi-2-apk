@@ -53,8 +53,38 @@ export function preventTouchChrome(): () => void {
 }
 
 /** True for touch devices held in portrait orientation (needs rotate-device hint). */
-export function shouldShowRotateHint(): () => boolean {
-  const portraitMq = window.matchMedia('(orientation: portrait)');
-  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  return () => isTouch && portraitMq.matches;
+export function shouldShowRotateHint(): boolean {
+  try {
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const portrait = window.matchMedia('(orientation: portrait)').matches;
+    return isTouch && portrait;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Subscribe to real orientation flips via the matchMedia "change" event.
+ * This is the reliable signal on iOS Safari / Android Chrome — it fires only
+ * when the orientation query actually flips (unlike orientationchange, which
+ * can fire before the viewport/layout has settled). Returns a cleanup fn.
+ */
+export function watchOrientation(onChange: () => void): () => void {
+  try {
+    const mq = window.matchMedia('(orientation: portrait)');
+    const handler = () => onChange();
+    type LegacyMq = { addListener?: (cb: () => void) => void; removeListener?: (cb: () => void) => void };
+    const legacy = mq as unknown as LegacyMq;
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    }
+    if (typeof legacy.addListener === 'function') {
+      legacy.addListener(handler);
+      return () => legacy.removeListener?.(handler);
+    }
+    return () => {};
+  } catch {
+    return () => {};
+  }
 }
