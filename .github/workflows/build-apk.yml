@@ -70,15 +70,15 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p out
-          cp android/app/build/outputs/apk/release/app-release.apk "out/NINJA-v${VERSION}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "out/NINJA-ZEUS-v${VERSION}.apk"
           echo "APK_VERSION=${VERSION}" >> "$GITHUB_ENV"
           ls -la out/
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NINJA-v${{ env.APK_VERSION }}-apk
-          path: out/NINJA-*.apk
+          name: NINJA-ZEUS-v${{ env.APK_VERSION }}-apk
+          path: out/NINJA-ZEUS-*.apk
           if-no-files-found: error
 
       - name: Attach APK to GitHub Release
@@ -87,9 +87,9 @@ jobs:
           TAG="${{ github.event.release.tag_name }}"
           if [ -z "$TAG" ]; then TAG="${{ github.ref_name }}"; fi
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --generate-notes --title "NINJA $TAG"
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --generate-notes --title "NINJA ZEUS $TAG"
           fi
-          gh release upload "$TAG" out/NINJA-*.apk --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" out/NINJA-ZEUS-*.apk --clobber --repo "$GITHUB_REPOSITORY"
           echo "APK attached to release $TAG"
 
   web:
@@ -148,23 +148,23 @@ jobs:
         run: |
           npx --yes @neutralinojs/neu@11.8.0 update
           npx --yes @neutralinojs/neu@11.8.0 build --release
-          ls -la desktop-dist/NINJA/
+          ls -la desktop-dist/NINJA-ZEUS/
 
       - name: Package desktop zips
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          cd desktop-dist/NINJA
-          zip -q -r "../../NINJA-v${VERSION}-win-x64.zip" NINJA-win_x64.exe resources.neu
-          zip -q -r "../../NINJA-v${VERSION}-linux-x64.zip" NINJA-linux_x64 resources.neu
+          cd desktop-dist/NINJA-ZEUS
+          zip -q -r "../../NINJA-ZEUS-v${VERSION}-win-x64.zip" NINJA-ZEUS-win_x64.exe resources.neu
+          zip -q -r "../../NINJA-ZEUS-v${VERSION}-linux-x64.zip" NINJA-ZEUS-linux_x64 resources.neu
           cd ../..
-          ls -la NINJA-v*-*.zip
+          ls -la NINJA-ZEUS-v*-*.zip
           echo "DESKTOP_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Upload desktop artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NINJA-v${{ env.DESKTOP_VERSION }}-desktop
-          path: NINJA-v*-x64.zip
+          name: NINJA-ZEUS-v${{ env.DESKTOP_VERSION }}-desktop
+          path: NINJA-ZEUS-v*-x64.zip
           if-no-files-found: error
 
       - name: Attach desktop bundles to GitHub Release
@@ -172,5 +172,5 @@ jobs:
         run: |
           TAG="${{ github.event.release.tag_name }}"
           if [ -z "$TAG" ]; then TAG="${{ github.ref_name }}"; fi
-          gh release upload "$TAG" NINJA-v*-x64.zip --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" NINJA-ZEUS-v*-x64.zip --clobber --repo "$GITHUB_REPOSITORY"
           echo "Desktop bundles attached to release $TAG"

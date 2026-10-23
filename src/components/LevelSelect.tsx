@@ -140,7 +140,7 @@ export const LevelSelect: React.FC<LevelSelectProps> = ({
 
       {/* Footer Info */}
       <div className="relative z-10 text-center text-xs text-zinc-500 py-2">
-        <span>NINJA · 60 FPS HTML5 Canvas</span>
+        <span>NINJA ZEUS · HTML5 Canvas + WebGL</span>
       </div>
     </div>
   );

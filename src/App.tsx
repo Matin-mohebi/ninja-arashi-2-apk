@@ -15,6 +15,7 @@ import { NinjaEngine } from './engine/NinjaEngine';
 import { sounds } from './audio/soundManager';
 import { music, MusicTrack } from './audio/music';
 import { MainMenu } from './components/MainMenu';
+import { ZeusMode } from './components/ZeusMode';
 import { LevelSelect } from './components/LevelSelect';
 import { HUD } from './components/HUD';
 import { VirtualControls } from './components/VirtualControls';
@@ -491,6 +492,11 @@ export default function App() {
         engineRef.current?.stop();
         return;
       }
+      // Zeus mode: back always lands on the main menu (game unmounts + disposes)
+      if (gameState === 'ZEUS_MODE') {
+        setGameState('TITLE_MENU');
+        return;
+      }
       if (gameState === 'PAUSED') {
         setGameState('PLAYING');
         engineRef.current?.start();
@@ -636,6 +642,7 @@ export default function App() {
           isMuted={isMuted}
           stats={stats}
           onPlay={startCampaign}
+          onOpenZeus={() => setGameState('ZEUS_MODE')}
           onOpenLevelSelect={() => setGameState('LEVEL_SELECT')}
           onOpenDojo={() => setShowDojo(true)}
           onOpenHowToPlay={() => setShowHowToPlay(true)}
@@ -644,6 +651,16 @@ export default function App() {
           onToggleMute={toggleMute}
           onToggleLang={toggleLang}
           bgUrl={titleBg}
+        />
+      )}
+
+      {/* 1b. Zeus Mode — endless 3D runner (v1.4.0) */}
+      {gameState === 'ZEUS_MODE' && (
+        <ZeusMode
+          lang={lang}
+          isMuted={isMuted}
+          onToggleMute={toggleMute}
+          onExit={() => setGameState('TITLE_MENU')}
         />
       )}
 

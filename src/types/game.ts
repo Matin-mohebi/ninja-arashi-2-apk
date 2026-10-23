@@ -1,6 +1,7 @@
 export type GameState =
   | 'TITLE_MENU'
   | 'LEVEL_SELECT'
+  | 'ZEUS_MODE'
   | 'PLAYING'
   | 'PAUSED'
   | 'ROUND_SUMMARY'

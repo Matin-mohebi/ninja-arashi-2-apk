@@ -11,6 +11,7 @@ import {
   Globe,
   Coins,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { Language, PlayerStats } from '../types/game';
 import { getTranslation } from '../utils/translations';
@@ -22,6 +23,7 @@ interface MainMenuProps {
   isMuted: boolean;
   stats: PlayerStats;
   onPlay: () => void;
+  onOpenZeus: () => void;
   onOpenLevelSelect: () => void;
   onOpenDojo: () => void;
   onOpenHowToPlay: () => void;
@@ -42,6 +44,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   isMuted,
   stats,
   onPlay,
+  onOpenZeus,
   onOpenLevelSelect,
   onOpenDojo,
   onOpenHowToPlay,
@@ -112,7 +115,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between p-4 sm:p-6">
         <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-zinc-400 font-mono drop-shadow">
-          NINJA · SHADOW ACTION
+          NINJA ZEUS · SHADOW ACTION
         </span>
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80 backdrop-blur text-amber-300 text-xs font-semibold">
@@ -168,6 +171,18 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <span>{trans.startGame}</span>
         </button>
 
+        {/* Zeus Mode (v1.4.0): endless 3D runner */}
+        <button
+          onClick={() => {
+            sounds.playSlash();
+            onOpenZeus();
+          }}
+          className="mt-2.5 w-full max-w-xs flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 to-teal-300 hover:from-cyan-300 hover:to-teal-200 text-[#001a1a] font-bold text-base transition-all shadow-[0_0_30px_rgba(0,255,255,0.45)] active:scale-95"
+        >
+          <Zap className="w-5 h-5 fill-current" />
+          <span>{trans.zeusMode}</span>
+        </button>
+
         {/* Secondary grid */}
         <div className="mt-4 grid grid-cols-2 gap-2.5 w-full max-w-xs">
           <MenuBtn icon={<Users className="w-4 h-4" />} label={trans.characters} onClick={() => { sounds.playCoin(); onOpenDojo(); }} />
@@ -191,8 +206,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Footer (informational only — never blocks buttons above it) */}
       <div className="pointer-events-none absolute bottom-0 inset-x-0 z-10 flex items-center justify-between px-4 sm:px-6 py-3 text-[10px] sm:text-xs text-zinc-600 border-t border-zinc-900/60">
-        <span>Legacy of the Shadow · Katana, Shuriken &amp; Ninjutsu</span>
-        <span className="font-mono">v1.2.0 · 60 FPS</span>
+        <span>Legacy of the Shadow · Katana, Shuriken &amp; Wrath of Zeus</span>
+        <span className="font-mono">v1.4.0 · 60 FPS</span>
       </div>
     </div>
   );

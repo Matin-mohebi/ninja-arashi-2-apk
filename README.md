@@ -1,20 +1,20 @@
 <div align="center">
 
-# 🥷 NINJA
+# ⚡🥷 NINJA ZEUS
 
-**نینجا**
+**نینجا زئوس** — دو بازی در یک اپ: پلتفرمر اکشن سایه‌ای + دوندهٔ بی‌پایان سه‌بعدی «حالت زئوس»
 
-An intense dark-silhouette ninja action platformer — packaged as a native Android APK.
+A dark-silhouette ninja action platformer **plus** an endless 3D runner (Zeus Mode) — packaged as a native Android APK, desktop app and web game.
 
 </div>
 
 <div align="center">
 
 ![Platform](https://img.shields.io/badge/platform-Android%206%2B-green)
-![Engine](https://img.shields.io/badge/render-Canvas%202D%20%2B%20React%2019-red)
+![Engine](https://img.shields.io/badge/render-Canvas%202D%20%2B%20Three.js%20%2B%20React%2019-red)
 ![Wrapper](https://img.shields.io/badge/wrapper-Capacitor%207-blue)
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-orange)
-![Size](https://img.shields.io/badge/APK-~37%20MB-yellow)
+![Size](https://img.shields.io/badge/APK-~7%20MB-yellow)
 
 </div>
 
@@ -24,11 +24,11 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 
 ## ⬇️ دانلود | Download
 
-**📱 [دانلود APK اندروید — NINJA-v1.3.0.apk (~6 MB)](../../releases/download/v1.3.0/NINJA-v1.3.0.apk)**
+**📱 [دانلود APK اندروید — NINJA-ZEUS-v1.4.0.apk (~7 MB)](../../releases/download/v1.4.0/NINJA-ZEUS-v1.4.0.apk)**
 
-**🪟 [دانلود برای ویندوز — NINJA-v1.3.0-win-x64.zip (~10 MB)](../../releases/download/v1.3.0/NINJA-v1.3.0-win-x64.zip)** — خارج کنید و `NINJA-win_x64.exe` را اجرا کنید (ویندوز ۱۰/۱۱)
+**🪟 [دانلود برای ویندوز — NINJA-ZEUS-v1.4.0-win-x64.zip (~10 MB)](../../releases/download/v1.4.0/NINJA-ZEUS-v1.4.0-win-x64.zip)** — خارج کنید و `NINJA-ZEUS-win_x64.exe` را اجرا کنید (ویندوز ۱۰/۱۱)
 
-**🐧 [نسخه لینوکس — NINJA-v1.3.0-linux-x64.zip](../../releases/download/v1.3.0/NINJA-v1.3.0-linux-x64.zip)** — `chmod +x NINJA-linux_x64 && ./NINJA-linux_x64`
+**🐧 [نسخه لینوکس — NINJA-ZEUS-v1.4.0-linux-x64.zip](../../releases/download/v1.4.0/NINJA-ZEUS-v1.4.0-linux-x64.zip)** — `chmod +x NINJA-ZEUS-linux_x64 && ./NINJA-ZEUS-linux_x64`
 
 **🌐 [بازی آنلاین در مرورگر (بدون نصب)](https://matin-mohebi.github.io/ninja-arashi-2-apk/)** | [Releases](../../releases)
 
@@ -39,7 +39,7 @@ An intense dark-silhouette ninja action platformer — packaged as a native Andr
 ## 📖 درباره بازی | About
 
 **فارسی:**
-نبرد شینوبی در دنیای تاریکی و شمشیر! یک پلتفرمر اکشن با سبک ظاهری «سایه‌ها» (dark silhouette)، شامل مبارزه با کاتانا، پرتاب شوریکن، دَش سایه، جادوی مبدل (Kawarimi)، تله‌های مرگبار و باس‌فایت. بازی کاملاً **آفلاین** است و رابط کاربری فارسی/انگلیسی دارد.
+دو بازی در یک اپ: (۱) نبرد شینوبی در دنیای تاریکی و شمشیر و (۲) حالت زئوس، دوندهٔ بی‌پایان سه‌بعدی در معبد زئوس! یک پلتفرمر اکشن با سبک ظاهری «سایه‌ها» (dark silhouette)، شامل مبارزه با کاتانا، پرتاب شوریکن، دَش سایه، جادوی مبدل (Kawarimi)، تله‌های مرگبار و باس‌فایت. بازی کاملاً **آفلاین** است و رابط کاربری فارسی/انگلیسی دارد.
 
 **English:**
 A side-scrolling action platformer featuring katana combat, shuriken throws, phantom dash, disguise ninjutsu, deadly traps, and boss battles across 3 levels with a persistent upgrade system (Dojo). 100% offline — no network permission required at runtime beyond the WebView engine.
@@ -54,6 +54,7 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 - 🌐 **Bilingual UI:** Persian (default) / English, RTL-aware
 - 🏅 **Stats & 10 achievements** with toast unlocks, best times, lifetime stats
 - 🌸 Themed parallax skies, weather particles (fireflies/snow/embers/petals), screen shake, hit-stop & dash ghosts
+- ⚡ **Zeus Mode (v1.4.0):** endless 3D auto-runner built on Three.js — swipe to change lanes, tap to jump, collect gems, dodge spikes/blades, 3 hearts, WebAudio synth SFX, procedural Zeus backdrop with bloom, adaptive quality for low-end phones, persistent best score
 
 ## 📱 بهینه‌سازی موبایل | Mobile Optimizations
 
@@ -71,11 +72,21 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 | 📐 Dynamic Viewport | چیدمان با `100dvh` — بدون جاافتادن پشت نوار مرورگر موبایل |
 | ⏸️ Auto-Pause | رفتن به پس‌زمینه = توقف خودکار بازی و موزیک |
 
-## 🪟 تغییرات v1.3.0 | What's New
+## ⚡ تغییرات v1.4.0 | What's New
+
+- ⚡ **حالت زئوس اضافه شد — کد شما، داخل بازی اصلی!** پروتوتایپ Three.js رانر به‌صورت یک حالت کامل در منوی اصلی یکپارچه شد؛ دکمهٔ «حالت زئوس» با تم فیروزه‌ای زیر دکمهٔ شروع
+- 🏃 **گیم‌پلی:** اجرای خودکار، ۳ لاین، پرش با لمس/کلیک/Space، تغییر لاین با کشیدن انگشت یا A/D، الماس‌های چرخان، موانع (تیغ، بلوک، تیغهٔ چرخان)، سکوهای معمولی/یخی/شکستنی، ۳ جان + بی‌ضرری موقت، سرعت فزاینده
+- 🎨 **تم زئوس:** پس‌زمینهٔ پروسیجرال (برق‌ها + نقش یونانی)، بلوم، ذرات، سیلوئت نینجا با شمشیر و شال و هالهٔ درخشان
+- 🐞 **رفع باگ‌های پروتوتایپ:** زنجیره‌های `||` جاافتاده در هندلر کیبورد، متغییر تعریف‌نشدهٔ `time`، اسکرول پس‌زمینه (`material.map.offset`، نه `material.offset`)، نور DirectionalLight بدون target، خوابیده‌بودن تیغ‌ها (اسپایک حالا رو به بالاست)، تداخل کلیک+لمس در موبایل، هم‌پوشانی پلتفرم‌ها، گارانتی حداقل یک لاین آزاد در هر بخش، نشت حافظهٔ لبه‌های سکو، پس‌زمینهٔ جاافتاده پس از ~۱۰۰ واحد حرکت
+- 📱 **بهینه‌سازی موبایل:** سقف pixel-ratio، سایهٔ ۱۰۲۴ یا خاموش روی دستگاه‌های ضعیف، ذرات کمتر، AudioContext تنبل با ژست کاربر
+- 🏆 ذخیرهٔ رکورد (Best) در حافظهٔ دستگاه + نمایش در HUD و پایان بازی
+- 🏷️ **تغییر نام بازی به NINJA ZEUS** — اپ اندروید، دسکتاپ، وب، آیکون پنجره و همهٔ خروجی‌های CI
+
+🪟 تغییرات v1.3.0 | What's New
 
 - 🖥️ **نسخه ویندوز و لینوکس اضافه شد!** — بازی حالا به‌صورت اپ دسکتاپ با پوستهٔ سبک Neutralino (WebView2) اجرا می‌شود؛ فقط ~۱۰ مگابایت — بدون Electron سنگین
-- 🪟 ویندوز: ZIP را باز کنید و `NINJA-win_x64.exe` را اجرا کنید (ویندوز ۱۰/۱۱ با WebView2)
-- 🐧 لینوکس: `chmod +x NINJA-linux_x64 && ./NINJA-linux_x64`
+- 🪟 ویندوز: ZIP را باز کنید و `NINJA-ZEUS-win_x64.exe` را اجرا کنید (ویندوز ۱۰/۱۱ با WebView2)
+- 🐧 لینوکس: `chmod +x NINJA-ZEUS-linux_x64 && ./NINJA-ZEUS-linux_x64`
 - 🎨 آیکون اختصاصی بازی (شوریکن) برای پنجره، فاوآیکون و دسکتاپ
 - 🤖 ساخت و انتشار دسکتاپ هم کاملاً خودکار شد — با هر ریلیز، ZIP ویندوز و لینوکس هم به Releases اضافه می‌شود
 
@@ -117,7 +128,8 @@ A side-scrolling action platformer featuring katana combat, shuriken throws, pha
 
 ```
 ├── src/
-│   ├── engine/NinjaEngine.ts    # موتور بازی (۱۷۰۰+ خط): فیزیک، دوربین، رندر
+│   ├── engine/NinjaEngine.ts    # موتور بازی کمپین (۱۷۰۰+ خط): فیزیک، دوربین، رندر
+│   ├── zeus/ZeusGame.ts         # موتور حالت زئوس (Three.js): دوندهٔ بی‌پایان سه‌بعدی
 │   ├── levels/levelsData.ts     # داده مراحل
 │   ├── components/              # HUD، کنترل لمسی مجازی، مودال‌ها
 │   ├── audio/soundManager.ts    # سینتی‌سایزر صوتی (Web Audio)

@@ -1,6 +1,6 @@
 {
   "applicationId": "ir.matin.ninja",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/dist/",
@@ -20,7 +20,7 @@
   ],
   "modes": {
     "window": {
-      "title": "NINJA",
+      "title": "NINJA ZEUS",
       "width": 1280,
       "height": 720,
       "minWidth": 480,
@@ -34,7 +34,7 @@
     }
   },
   "cli": {
-    "binaryName": "NINJA",
+    "binaryName": "NINJA-ZEUS",
     "resourcesPath": "/dist/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/dist/neutralino.js",
