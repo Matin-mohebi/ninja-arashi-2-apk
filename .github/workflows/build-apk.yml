@@ -66,31 +66,37 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Rename APK with version
+      - name: Build signed release AAB (Google Play)
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Rename APK/AAB with version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p out
           cp android/app/build/outputs/apk/release/app-release.apk "out/NINJA-ZEUS-v${VERSION}.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "out/NINJA-ZEUS-v${VERSION}.aab"
           echo "APK_VERSION=${VERSION}" >> "$GITHUB_ENV"
           ls -la out/
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NINJA-ZEUS-v${{ env.APK_VERSION }}-apk
-          path: out/NINJA-ZEUS-*.apk
+          name: NINJA-ZEUS-v${{ env.APK_VERSION }}-android
+          path: out/NINJA-ZEUS-*.a*
           if-no-files-found: error
 
-      - name: Attach APK to GitHub Release
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+      - name: Attach APK/AAB to GitHub Release
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
         run: |
           TAG="${{ github.event.release.tag_name }}"
           if [ -z "$TAG" ]; then TAG="${{ github.ref_name }}"; fi
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name); fi
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --generate-notes --title "NINJA ZEUS $TAG"
           fi
-          gh release upload "$TAG" out/NINJA-ZEUS-*.apk --clobber --repo "$GITHUB_REPOSITORY"
-          echo "APK attached to release $TAG"
+          gh release upload "$TAG" out/NINJA-ZEUS-*.apk out/NINJA-ZEUS-*.aab --clobber --repo "$GITHUB_REPOSITORY"
+          echo "APK + signed AAB attached to release $TAG"
 
   web:
     # Deploy the web build to GitHub Pages (gh-pages branch) on every push to main
