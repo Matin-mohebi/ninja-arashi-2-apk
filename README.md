@@ -36,6 +36,16 @@ A dark-silhouette ninja action platformer **plus** an endless 3D runner (Zeus Mo
 
 ---
 
+## 🏷️ نسخهٔ فعلی و دانلود | Current Version
+
+- **آخرین نسخهٔ منتشرشده:** [NINJA ZEUS v1.4.0](https://github.com/Matin-mohebi/ninja-arashi-2-apk/releases/tag/v1.4.0) — ۲۳ اکتبر ۲۰۲۶
+- **نسخهٔ Android:** 1.4.0 · **versionCode:** 10400 (هماهنگ با package.json)
+- **پلتفرم‌ها:** Android 6+، وب، Windows 10/11 و Linux x64
+- **دانلود پایدار:** [صفحهٔ Releases](https://github.com/Matin-mohebi/ninja-arashi-2-apk/releases)
+- **ساخت آزمایشی:** APK دیباگ از [Actions](https://github.com/Matin-mohebi/ninja-arashi-2-apk/actions) قابل دریافت است.
+
+در انتشارهای بعدی، APK و AAB نسخهٔ Release فقط با کلید امضای اختصاصی ساخته می‌شوند؛ اگر کلید انتشار تنظیم نباشد، فایل Debug برای آزمایش ارائه می‌شود و Release بدون امضای معتبر منتشر نخواهد شد. تاریخچهٔ تغییرات در [Releases](https://github.com/Matin-mohebi/ninja-arashi-2-apk/releases) قرار دارد.
+
 ## 📖 درباره بازی | About
 
 **فارسی:**
@@ -154,12 +164,12 @@ cd android
 
 ## ⚙️ CI/CD
 
-هربار push به `main` باعث اجرای [GitHub Actions](../../actions) می‌شود:
+تغییرات Pull Request و هر push به `main` باعث اجرای [GitHub Actions](../../actions) می‌شوند:
 
 1. `npm ci` → `npm run build` (Vite)
 2. `npx cap sync android`
-3. `./gradlew assembleDebug` (JDK 21)
-4. آپلود APK به صورت Artifact با نام `ninja-arashi-2-debug-apk`
+3. ساخت APK آزمایشی؛ ساخت Release فقط در صورت وجود همهٔ Secrets امضا انجام می‌شود.
+4. آپلود APKهای قابل‌ساخت به‌صورت Artifact در Actions
 
 Artifact ها ۹۰ روز قابل دانلود هستند.
 
